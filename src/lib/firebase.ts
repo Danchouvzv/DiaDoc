@@ -1,11 +1,8 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
-import { getAnalytics, type Analytics } from "firebase/analytics";
-// Import getStorage for Firebase Storage if you plan to use it.
-// import { getStorage } from "firebase/storage";
-
+import { initializeApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -20,46 +17,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-// let storage: Storage; // Declare storage if you'll use it
-let analytics: Analytics | undefined;
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-if (typeof window !== "undefined" && !getApps().length) {
-  try {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    // storage = getStorage(app); // Initialize storage
-    if (firebaseConfig.measurementId) {
-      analytics = getAnalytics(app);
-    }
-  } catch (error) {
-    console.error("Firebase initialization error:", error);
-    // Fallback to placeholder objects if initialization fails
-    app = {} as FirebaseApp; 
-    auth = {} as Auth; 
-    db = {} as Firestore; 
-    // storage = {} as Storage;
-    analytics = undefined;
-  }
-} else if (getApps().length > 0) {
-  app = getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
-  // storage = getStorage(app); // Initialize storage
-  if (firebaseConfig.measurementId && typeof window !== "undefined") {
-     analytics = getAnalytics(app);
-  }
-} else {
-  // Fallback for server-side rendering or environments where Firebase might not be initialized yet.
-  app = {} as FirebaseApp; 
-  auth = {} as Auth; 
-  db = {} as Firestore;
-  // storage = {} as Storage; 
-  analytics = undefined;
-}
-
-
-export { app, auth, db, analytics }; // Add storage to exports if used
+export { app, auth, db, storage };

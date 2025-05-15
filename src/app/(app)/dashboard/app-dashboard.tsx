@@ -1,3 +1,6 @@
+// This file has been renamed to app-dashboard.tsx to avoid route conflicts
+// with src/app/dashboard/page.tsx
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
