@@ -62,45 +62,48 @@ interface PDFReportProps {
   };
 }
 
-const PDFReport = ({ userId, dateRange, data, insights }: PDFReportProps) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <View style={styles.section}>
-        <Text style={styles.title}>Health Report</Text>
-        <Text style={styles.text}>Period: {dateRange.from} to {dateRange.to}</Text>
-        
-        {/* Glucose Section */}
-        <Text style={styles.subtitle}>Glucose Readings</Text>
-        <View style={styles.table}>
-          {data.glucose.slice(0, 10).map((reading, index) => (
-            <View key={index} style={styles.tableRow}>
-              <Text style={[styles.tableCell, index === 0 && styles.tableHeader]}>
-                {reading.timestamp}
-              </Text>
-              <Text style={[styles.tableCell, index === 0 && styles.tableHeader]}>
-                {reading.value} mg/dL
-              </Text>
-            </View>
+// Используем JSX.Element вместо прямого рендеринга компонентов
+const createPDFReport = ({ userId, dateRange, data, insights }: PDFReportProps) => ({
+  document: (
+    <Document>
+      <Page style={styles.page}>
+        <View style={styles.section}>
+          <Text style={styles.title}>Health Report</Text>
+          <Text style={styles.text}>Period: {dateRange.from} to {dateRange.to}</Text>
+          
+          {/* Glucose Section */}
+          <Text style={styles.subtitle}>Glucose Readings</Text>
+          <View style={styles.table}>
+            {data.glucose.slice(0, 10).map((reading, index) => (
+              <View key={index} style={styles.tableRow}>
+                <Text style={[styles.tableCell, index === 0 && styles.tableHeader]}>
+                  {reading.timestamp}
+                </Text>
+                <Text style={[styles.tableCell, index === 0 && styles.tableHeader]}>
+                  {reading.value} mg/dL
+                </Text>
+              </View>
+            ))}
+          </View>
+          
+          {/* Insights Section */}
+          <Text style={styles.subtitle}>AI Insights</Text>
+          {insights.glucoseInsights.map((insight, index) => (
+            <Text key={index} style={styles.text}>• {insight}</Text>
           ))}
         </View>
-        
-        {/* Insights Section */}
-        <Text style={styles.subtitle}>AI Insights</Text>
-        {insights.glucoseInsights.map((insight, index) => (
-          <Text key={index} style={styles.text}>• {insight}</Text>
-        ))}
-      </View>
+      </Page>
       
-      {/* Additional pages for food, activity, and wellbeing data */}
+      {/* Additional page for food data */}
       <Page style={styles.page}>
         <View style={styles.section}>
           <Text style={styles.subtitle}>Food Log</Text>
           {/* Food entries table */}
         </View>
       </Page>
-    </Page>
-  </Document>
-);
+    </Document>
+  )
+});
 
 class PDFService {
   private static instance: PDFService;
@@ -133,14 +136,12 @@ class PDFService {
     };
 
     // Create PDF document
-    const report = (
-      <PDFReport
-        userId={userId}
-        dateRange={dateRange}
-        data={data.data}
-        insights={insights}
-      />
-    );
+    const report = createPDFReport({
+      userId,
+      dateRange,
+      data: data.data,
+      insights
+    });
 
     // TODO: Implement PDF generation using @react-pdf/renderer
     // This will require setting up proper server-side rendering
