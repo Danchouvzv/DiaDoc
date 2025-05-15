@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { useState } from 'react';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'react-hot-toast';
+import { DateRange } from 'react-day-picker';
 
 export const metadata: Metadata = {
   title: 'Reports & Export - DiaDoc',
@@ -13,11 +15,36 @@ export const metadata: Metadata = {
 };
 
 export default function ReportsPage() {
-  const handleExport = async (format: string) => {
+  const [selectedFormat, setSelectedFormat] = useState('pdf');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: new Date(),
+  });
+  const [selectedData, setSelectedData] = useState({
+    glucose: true,
+    food: true,
+    activity: true,
+    wellbeing: true,
+  });
+
+  const handleExport = async () => {
     try {
-      const from = '2024-01-01'; // TODO: Get from date picker
-      const to = '2024-12-31';   // TODO: Get from date picker
-      const entities = ['glucose', 'food', 'activity', 'wellbeing'];
+      if (!dateRange?.from || !dateRange?.to) {
+        toast.error('Please select a date range');
+        return;
+      }
+
+      const from = dateRange.from.toISOString().split('T')[0];
+      const to = dateRange.to.toISOString().split('T')[0];
+      
+      const entities = Object.entries(selectedData)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([entity]) => entity);
+
+      if (entities.length === 0) {
+        toast.error('Please select at least one data type');
+        return;
+      }
       
       const params = new URLSearchParams({
         from,
@@ -25,7 +52,7 @@ export default function ReportsPage() {
         entities: entities.join(','),
       });
 
-      const response = await fetch(`/api/exports/${format}?${params}`);
+      const response = await fetch(`/api/exports/${selectedFormat}?${params}`);
       
       if (!response.ok) {
         throw new Error('Export failed');
@@ -36,7 +63,7 @@ export default function ReportsPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `health-data.${format}`;
+      a.download = `health-data.${selectedFormat}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -58,24 +85,51 @@ export default function ReportsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4">Date Range</h3>
-          <DateRangePicker />
+          <DateRangePicker 
+            date={dateRange}
+            onDateChange={setDateRange}
+          />
           
           <h3 className="text-xl font-semibold mt-6 mb-4">Data to Include</h3>
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <Checkbox id="glucose" defaultChecked />
+              <Checkbox 
+                id="glucose" 
+                checked={selectedData.glucose}
+                onCheckedChange={(checked) => 
+                  setSelectedData(prev => ({ ...prev, glucose: !!checked }))
+                }
+              />
               <Label htmlFor="glucose">Glucose Readings</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox id="food" defaultChecked />
+              <Checkbox 
+                id="food" 
+                checked={selectedData.food}
+                onCheckedChange={(checked) => 
+                  setSelectedData(prev => ({ ...prev, food: !!checked }))
+                }
+              />
               <Label htmlFor="food">Food Log</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox id="activity" defaultChecked />
+              <Checkbox 
+                id="activity" 
+                checked={selectedData.activity}
+                onCheckedChange={(checked) => 
+                  setSelectedData(prev => ({ ...prev, activity: !!checked }))
+                }
+              />
               <Label htmlFor="activity">Activity Log</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox id="wellbeing" defaultChecked />
+              <Checkbox 
+                id="wellbeing" 
+                checked={selectedData.wellbeing}
+                onCheckedChange={(checked) => 
+                  setSelectedData(prev => ({ ...prev, wellbeing: !!checked }))
+                }
+              />
               <Label htmlFor="wellbeing">Wellbeing Data</Label>
             </div>
           </div>
@@ -83,7 +137,11 @@ export default function ReportsPage() {
 
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4">Export Format</h3>
-          <RadioGroup defaultValue="pdf" className="space-y-4">
+          <RadioGroup 
+            value={selectedFormat} 
+            onValueChange={setSelectedFormat}
+            className="space-y-4"
+          >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="pdf" id="pdf" />
               <Label htmlFor="pdf">PDF Report</Label>
@@ -101,7 +159,7 @@ export default function ReportsPage() {
           <div className="mt-8">
             <Button 
               className="w-full"
-              onClick={() => handleExport('pdf')}
+              onClick={handleExport}
             >
               Export Data
             </Button>
