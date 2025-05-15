@@ -10,8 +10,8 @@
 
 'use server';
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { definePrompt, defineFlow, executePrompt } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const AnalyzeFoodEntryInputSchema = z.object({
   description: z
@@ -29,28 +29,37 @@ const AnalyzeFoodEntryOutputSchema = z.object({
 });
 export type AnalyzeFoodEntryOutput = z.infer<typeof AnalyzeFoodEntryOutputSchema>;
 
+// Main entry point function
 export async function analyzeFoodEntry(input: AnalyzeFoodEntryInput): Promise<AnalyzeFoodEntryOutput> {
-  return analyzeFoodEntryFlow(input);
-}
-
-const analyzeFoodEntryPrompt = ai.definePrompt({
-  name: 'analyzeFoodEntryPrompt',
-  input: {schema: AnalyzeFoodEntryInputSchema},
-  output: {schema: AnalyzeFoodEntryOutputSchema},
-  prompt: `Analyze the following food entry description and estimate its nutritional content (calories, protein, carbs, fat).
+  // Define the prompt
+  const prompt = await definePrompt({
+    name: 'analyzeFoodEntryPrompt',
+    input: {schema: AnalyzeFoodEntryInputSchema},
+    output: {schema: AnalyzeFoodEntryOutputSchema},
+    prompt: `Analyze the following food entry description and estimate its nutritional content (calories, protein, carbs, fat).
 \nFood Entry Description: {{{description}}}
 \nProvide the estimated calories, protein, carbs, and fat content.  If possible, also provide brief recommendations for improving the meal's nutritional balance.
 \nEnsure that the output is a valid JSON object. Do not include any surrounding text or explanations.`,
-});
-
-const analyzeFoodEntryFlow = ai.defineFlow(
-  {
-    name: 'analyzeFoodEntryFlow',
-    inputSchema: AnalyzeFoodEntryInputSchema,
-    outputSchema: AnalyzeFoodEntryOutputSchema,
-  },
-  async input => {
-    const {output} = await analyzeFoodEntryPrompt(input);
-    return output!;
+  });
+  
+  // Execute the prompt with the input
+  try {
+    const output = await executePrompt(prompt, input);
+    return output || {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      recommendations: "Unable to analyze food entry"
+    };
+  } catch (error) {
+    console.error("Error analyzing food entry:", error);
+    return {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      recommendations: "Error analyzing food entry"
+    };
   }
-);
+}

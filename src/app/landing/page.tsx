@@ -567,7 +567,7 @@ export default function LandingPage() {
                             </motion.div>
                           </div>
                         </div>
-                      </motion.div>
+                    </motion.div>
                   </motion.div>
                 </CarouselItem>
               ))}

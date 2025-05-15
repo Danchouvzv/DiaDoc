@@ -8,6 +8,19 @@ import { analyzeFoodWithAI } from '@/ai/food-analyzer';
 import { UserProfile } from '@/lib/schemas';
 import { ArrowLeft, Search, Utensils, Clock, Info, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { GeminiService } from '@/lib/gemini-service';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { toast } from 'react-hot-toast';
+import { MessagingService } from '@/lib/firebase-messaging';
+
+interface FoodEntry {
+  description: string;
+  portion: string;
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  time: string;
+}
 
 export default function LogFood() {
   const { user } = useAuth();
@@ -17,28 +30,14 @@ export default function LogFood() {
   const [mealType, setMealType] = useState('breakfast');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   
-  const [analysisResult, setAnalysisResult] = useState<{
-    description: string;
-    nutritionalInfo: {
-      calories: number;
-      carbs: number;
-      protein: number;
-      fat: number;
-      fiber?: number;
-      sugar?: number;
-    };
-    glucoseImpact: {
-      expectedImpact: 'low' | 'moderate' | 'high';
-      riseSpeed: 'slow' | 'moderate' | 'fast';
-      explanation: string;
-    };
-    diabetesFriendly: boolean;
-    recommendations: string[];
-    alternatives?: string[];
-  } | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
   
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  
+  const { register, handleSubmit, reset } = useForm<FoodEntry>();
+  const geminiService = GeminiService.getInstance();
+  const messagingService = MessagingService.getInstance();
   
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -55,71 +54,54 @@ export default function LogFood() {
     fetchUserProfile();
   }, [user]);
   
-  const handleAnalyzeFood = async () => {
-    if (!foodDescription.trim()) {
-      setError('Please enter a food description');
-      return;
-    }
-    
-    setError(null);
+  const onSubmit = async (data: FoodEntry) => {
+    if (!user) return;
+
     setAnalyzing(true);
-    
     try {
-      const result = await analyzeFoodWithAI(
-        foodDescription,
-        userProfile?.diabetesType,
-        {
-          insulinSensitive: userProfile?.insulinTherapy,
-          dietaryRestrictions: [], // Would come from user profile
-          preferredCuisines: [], // Would come from user profile
-        }
+      // Analyze food with AI
+      const analysis = await geminiService.analyzeFoodEntry(
+        `${data.portion} of ${data.description} for ${data.mealType} at ${data.time}`
       );
+
+      setAnalysisResult(analysis);
+
+      // Save to Firestore
+      const foodEntryRef = doc(db, 'users', user.uid, 'foodEntries', new Date().toISOString());
+      await setDoc(foodEntryRef, {
+        ...data,
+        analysis,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Show success notification
+      toast.success('Food entry logged successfully!');
+
+      // Reset form
+      reset();
+
+      // Send reminder notification for glucose check
+      const reminderTime = new Date();
+      reminderTime.setHours(reminderTime.getHours() + 2);
       
-      setAnalysisResult(result);
+      await fetch('/api/send-notification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          title: 'Glucose Check Reminder',
+          body: `Time to check your glucose levels after your ${data.mealType}!`,
+          scheduledTime: reminderTime.toISOString(),
+        }),
+      });
+
     } catch (error) {
-      console.error('Error analyzing food:', error);
-      setError('Failed to analyze food. Please try again.');
+      console.error('Error logging food:', error);
+      toast.error('Failed to log food entry. Please try again.');
     } finally {
       setAnalyzing(false);
-    }
-  };
-  
-  const handleSaveEntry = async () => {
-    if (!user?.uid || !analysisResult) {
-      setError('Unable to save entry. Please try again.');
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      await createFoodEntry(user.uid, {
-        description: foodDescription,
-        mealType,
-        calories: analysisResult.nutritionalInfo.calories,
-        carbs: analysisResult.nutritionalInfo.carbs,
-        protein: analysisResult.nutritionalInfo.protein,
-        fat: analysisResult.nutritionalInfo.fat,
-        fiber: analysisResult.nutritionalInfo.fiber,
-        sugar: analysisResult.nutritionalInfo.sugar,
-        glucoseImpact: analysisResult.glucoseImpact.expectedImpact,
-        diabetesFriendly: analysisResult.diabetesFriendly,
-      });
-      
-      setSuccess(true);
-      
-      // Reset form after 2 seconds
-      setTimeout(() => {
-        setFoodDescription('');
-        setMealType('breakfast');
-        setAnalysisResult(null);
-        setSuccess(false);
-      }, 2000);
-    } catch (error) {
-      console.error('Error saving food entry:', error);
-      setError('Failed to save food entry. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
   
@@ -199,7 +181,7 @@ export default function LogFood() {
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
               />
               <button
-                onClick={handleAnalyzeFood}
+                onClick={handleSubmit(onSubmit)}
                 disabled={analyzing || !foodDescription.trim()}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-primary text-white px-4 py-1 rounded-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -239,52 +221,15 @@ export default function LogFood() {
               <div>
                 <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Nutritional Information</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Calories</p>
-                    <p className="text-xl font-bold text-gray-800 dark:text-white">
-                      {analysisResult.nutritionalInfo.calories}
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Carbs</p>
-                    <p className="text-xl font-bold text-gray-800 dark:text-white">
-                      {analysisResult.nutritionalInfo.carbs}g
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Protein</p>
-                    <p className="text-xl font-bold text-gray-800 dark:text-white">
-                      {analysisResult.nutritionalInfo.protein}g
-                    </p>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Fat</p>
-                    <p className="text-xl font-bold text-gray-800 dark:text-white">
-                      {analysisResult.nutritionalInfo.fat}g
-                    </p>
-                  </div>
+                  {Object.entries(analysisResult.nutritionalInfo).map(([key, value]) => (
+                    <div key={key} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{key}:</p>
+                      <p className="text-xl font-bold text-gray-800 dark:text-white">
+                        {value}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                
-                {(analysisResult.nutritionalInfo.fiber || analysisResult.nutritionalInfo.sugar) && (
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    {analysisResult.nutritionalInfo.fiber && (
-                      <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Fiber</p>
-                        <p className="text-xl font-bold text-gray-800 dark:text-white">
-                          {analysisResult.nutritionalInfo.fiber}g
-                        </p>
-                      </div>
-                    )}
-                    {analysisResult.nutritionalInfo.sugar && (
-                      <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Sugar</p>
-                        <p className="text-xl font-bold text-gray-800 dark:text-white">
-                          {analysisResult.nutritionalInfo.sugar}g
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
               
               <div>
@@ -323,7 +268,7 @@ export default function LogFood() {
                 Recommendations
               </h3>
               <ul className="space-y-2">
-                {analysisResult.recommendations.map((recommendation, index) => (
+                {analysisResult.recommendations.map((recommendation: string, index: number) => (
                   <li key={index} className="text-gray-700 dark:text-gray-300 flex items-start">
                     <span className="inline-block w-5 h-5 bg-primary text-white rounded-full flex items-center justify-center text-xs mr-2 mt-0.5">
                       {index + 1}
@@ -339,7 +284,7 @@ export default function LogFood() {
               <div className="mt-6">
                 <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Healthier Alternatives</h3>
                 <ul className="space-y-2">
-                  {analysisResult.alternatives.map((alternative, index) => (
+                  {analysisResult.alternatives.map((alternative: string, index: number) => (
                     <li key={index} className="text-gray-700 dark:text-gray-300 flex items-center">
                       <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
                       {alternative}
@@ -352,7 +297,7 @@ export default function LogFood() {
             {/* Save Button */}
             <div className="mt-8">
               <button
-                onClick={handleSaveEntry}
+                onClick={handleSubmit(onSubmit)}
                 disabled={loading}
                 className="w-full bg-primary text-white py-3 rounded-lg flex items-center justify-center font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >

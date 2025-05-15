@@ -7,8 +7,8 @@
  * - ProvideDietaryRecommendationsOutput - The return type for the provideDietaryRecommendations function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { definePrompt, executePrompt } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const ProvideDietaryRecommendationsInputSchema = z.object({
   foodIntake: z
@@ -35,14 +35,12 @@ export type ProvideDietaryRecommendationsOutput = z.infer<
 export async function provideDietaryRecommendations(
   input: ProvideDietaryRecommendationsInput
 ): Promise<ProvideDietaryRecommendationsOutput> {
-  return provideDietaryRecommendationsFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'provideDietaryRecommendationsPrompt',
-  input: {schema: ProvideDietaryRecommendationsInputSchema},
-  output: {schema: ProvideDietaryRecommendationsOutputSchema},
-  prompt: `You are a registered dietician who provides personalized dietary recommendations.
+  // Define the prompt
+  const prompt = await definePrompt({
+    name: 'provideDietaryRecommendationsPrompt',
+    input: {schema: ProvideDietaryRecommendationsInputSchema},
+    output: {schema: ProvideDietaryRecommendationsOutputSchema},
+    prompt: `You are a registered dietician who provides personalized dietary recommendations.
 
   Based on the user's food intake, activity levels, and health goals, provide dietary recommendations.
 
@@ -53,16 +51,18 @@ const prompt = ai.definePrompt({
   Provide specific and actionable recommendations to help the user achieve their goals.
   Please provide the recommendations in markdown format.
   `,
-});
-
-const provideDietaryRecommendationsFlow = ai.defineFlow(
-  {
-    name: 'provideDietaryRecommendationsFlow',
-    inputSchema: ProvideDietaryRecommendationsInputSchema,
-    outputSchema: ProvideDietaryRecommendationsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  });
+  
+  // Execute the prompt with the input
+  try {
+    const output = await executePrompt(prompt, input);
+    return output || {
+      recommendations: "Unable to generate dietary recommendations at this time."
+    };
+  } catch (error) {
+    console.error("Error generating dietary recommendations:", error);
+    return {
+      recommendations: "Error generating dietary recommendations. Please try again later."
+    };
   }
-);
+}

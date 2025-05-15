@@ -8,8 +8,8 @@
  * - RecognizeFoodPhotoOutput - The return type for the recognizeFoodPhoto function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { definePrompt, executePrompt } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const RecognizeFoodPhotoInputSchema = z.object({
   photoDataUri: z
@@ -26,28 +26,28 @@ const RecognizeFoodPhotoOutputSchema = z.object({
 export type RecognizeFoodPhotoOutput = z.infer<typeof RecognizeFoodPhotoOutputSchema>;
 
 export async function recognizeFoodPhoto(input: RecognizeFoodPhotoInput): Promise<RecognizeFoodPhotoOutput> {
-  return recognizeFoodPhotoFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'recognizeFoodPhotoPrompt',
-  input: {schema: RecognizeFoodPhotoInputSchema},
-  output: {schema: RecognizeFoodPhotoOutputSchema},
-  prompt: `You are an expert in food recognition.  You will be provided a photo of a meal, and you will respond with a list of ingredients.
+  // Define the prompt
+  const prompt = await definePrompt({
+    name: 'recognizeFoodPhotoPrompt',
+    input: {schema: RecognizeFoodPhotoInputSchema},
+    output: {schema: RecognizeFoodPhotoOutputSchema},
+    prompt: `You are an expert in food recognition. You will be provided a photo of a meal, and you will respond with a list of ingredients.
 
 Use the following photo to determine the ingredients:
 
 Photo: {{media url=photoDataUri}}`,
-});
-
-const recognizeFoodPhotoFlow = ai.defineFlow(
-  {
-    name: 'recognizeFoodPhotoFlow',
-    inputSchema: RecognizeFoodPhotoInputSchema,
-    outputSchema: RecognizeFoodPhotoOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  });
+  
+  // Execute the prompt with the input
+  try {
+    const output = await executePrompt(prompt, input);
+    return output || {
+      ingredients: ["Unable to recognize ingredients in photo"]
+    };
+  } catch (error) {
+    console.error("Error recognizing food photo:", error);
+    return {
+      ingredients: ["Error processing photo"]
+    };
   }
-);
+}

@@ -1,4 +1,4 @@
-import { ai } from './genkit';
+import { generateAIResponse } from './genkit';
 import { FoodEntry } from '../lib/schemas';
 
 interface FoodAnalysisResult {
@@ -263,9 +263,7 @@ export async function generateMealRecommendations(
     `;
     
     // Call Gemini API
-    const response = await ai.generate({
-      prompt: prompt
-    });
+    const response = await generateAIResponse(prompt);
     
     const responseText = response.text;
     
