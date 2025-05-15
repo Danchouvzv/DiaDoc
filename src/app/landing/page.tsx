@@ -270,9 +270,9 @@ export default function LandingPage() {
           </div>
         </header>
 
-        {/* Hero Section */}
-        <motion.section 
-          ref={heroRef}
+      {/* Hero Section */}
+      <motion.section 
+        ref={heroRef}
           className="relative py-24 md:py-32 lg:py-44 bg-background text-center overflow-hidden"
         >
           {/* Background image with parallax effect */}
@@ -327,11 +327,11 @@ export default function LandingPage() {
                   delay: shape.delay,
                 }}
                 className="w-full h-full rounded-full"
-              />
-            </motion.div>
+            />
+        </motion.div>
           ))}
           
-          <div className="container relative px-4 md:px-6 z-10">
+        <div className="container relative px-4 md:px-6 z-10">
             <motion.div
               variants={staggerContainer}
               initial="hidden"
@@ -347,57 +347,57 @@ export default function LandingPage() {
                 </span>
               </motion.div>
               
-              <motion.h1 
+          <motion.h1 
                 variants={fadeInUp(0.3)}
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground mb-6"
               >
                 Take <span className="text-primary font-bold">Control</span> of Your Health
-              </motion.h1>
+          </motion.h1>
               
-              <motion.p 
+          <motion.p 
                 variants={fadeInUp(0.4)}
                 className="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-white font-medium drop-shadow-lg bg-primary/10 backdrop-blur-sm p-4 rounded-lg"
-              >
-                DiaDoc is your personal diabetes companion, empowering you with AI-driven insights and intuitive tools to manage your health journey effortlessly.
-              </motion.p>
+          >
+            DiaDoc is your personal diabetes companion, empowering you with AI-driven insights and intuitive tools to manage your health journey effortlessly.
+          </motion.p>
               
-              <motion.div 
+          <motion.div 
                 variants={fadeInUp(0.5)}
                 className="mt-10 flex flex-col sm:flex-row justify-center items-center gap-5"
-              >
-                <motion.div
+          >
+            <motion.div
                   whileHover={{ 
                     scale: 1.05, 
                     boxShadow: "0 0 25px rgba(0, 163, 255, 0.5)"
                   }}
                   whileTap={{ scale: 0.98 }}
                   className="w-full sm:w-auto"
-                >
-                  <Button 
-                    size="lg" 
-                    asChild 
+            >
+              <Button 
+                size="lg" 
+                asChild 
                     className="w-full sm:w-auto text-lg px-8 py-6 shadow-lg bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white transition-all duration-300 rounded-xl"
-                  >
-                    <Link href="/register">Get Started Free</Link>
-                  </Button>
-                </motion.div>
+              >
+                <Link href="/register">Get Started Free</Link>
+              </Button>
+            </motion.div>
                 
-                <motion.div
+            <motion.div
                   whileHover={{ 
                     scale: 1.05, 
                     boxShadow: "0 0 15px rgba(0, 221, 255, 0.3)" 
                   }}
                   whileTap={{ scale: 0.98 }}
                   className="w-full sm:w-auto mt-4 sm:mt-0"
-                >
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    asChild 
+            >
+              <Button 
+                size="lg" 
+                variant="outline" 
+                asChild 
                     className="w-full sm:w-auto text-lg px-8 py-6 shadow-md border-[1.5px] border-primary/30 hover:border-accent/50 hover:bg-primary/5 transition-all duration-300 rounded-xl"
-                  >
-                    <Link href="#features">Learn More</Link>
-                  </Button>
+              >
+                <Link href="#features">Learn More</Link>
+              </Button>
                 </motion.div>
               </motion.div>
               
@@ -443,18 +443,18 @@ export default function LandingPage() {
                   </div>
                   <span className="text-sm text-muted-foreground">Live Better</span>
                 </motion.div>
-              </motion.div>
             </motion.div>
-          </div>
+          </motion.div>
+        </div>
           
           {/* Subtle wave divider */}
           <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent" />
           <svg className="absolute bottom-0 left-0 right-0 text-background fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 60">
             <path d="M0,0V60H1440V0C1280,40 1120,60 960,60C800,60 640,40 480,40C320,40 160,60 0,0Z" />
           </svg>
-        </motion.section>
+      </motion.section>
 
-        {/* Features Section */}
+      {/* Features Section */}
         <section id="features" className="py-20 md:py-28 bg-background relative overflow-hidden">
           {/* Background decorative elements */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
@@ -464,11 +464,11 @@ export default function LandingPage() {
           </div>
           
           <div className="container px-4 md:px-6 relative z-10">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
               className="text-center mb-16 md:mb-20"
             >
               <motion.div
@@ -487,33 +487,33 @@ export default function LandingPage() {
               </h2>
               <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
                 Everything you need for smarter health management, beautifully designed and easy to use.
-              </p>
-            </motion.div>
+            </p>
+          </motion.div>
             
-            <Carousel
-              opts={{ align: "start", loop: true }}
-              plugins={[autoplayPlugin.current]}
-              onMouseEnter={autoplayPlugin.current.stop}
-              onMouseLeave={autoplayPlugin.current.reset}
-              className="w-full max-w-5xl mx-auto"
-            >
-              <CarouselContent>
-                {featureSlides.map((slide, index) => (
+          <Carousel
+            opts={{ align: "start", loop: true }}
+            plugins={[autoplayPlugin.current]}
+            onMouseEnter={autoplayPlugin.current.stop}
+            onMouseLeave={autoplayPlugin.current.reset}
+            className="w-full max-w-5xl mx-auto"
+          >
+            <CarouselContent>
+              {featureSlides.map((slide, index) => (
                   <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3 cursor-pointer">
-                    <motion.div
-                      initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                      whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                      viewport={{ once: true, amount: 0.2 }}
+                  <motion.div
+                    initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: true, amount: 0.2 }}
                       transition={{ duration: 0.7, delay: index * 0.15 }}
                       className="p-2 h-full"
-                    >
-                      <motion.div
-                        whileHover={{ 
+                  >
+                    <motion.div
+                      whileHover={{ 
                           y: -12,
-                          scale: 1.03, 
+                        scale: 1.03, 
                           boxShadow: "0px 15px 40px -10px rgba(0, 0, 0, 0.2)" 
-                        }}
-                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                      }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
                         className="h-full rounded-2xl bg-gradient-to-br from-background to-background border border-border/70 overflow-hidden relative group"
                       >
                         {/* Color overlay that appears on hover */}
@@ -526,14 +526,14 @@ export default function LandingPage() {
                         {/* Card content */}
                         <div className="flex flex-col h-full">
                           <div className="relative h-52 overflow-hidden">
-                            <Image
-                              src={slide.imageSrc}
-                              alt={slide.title}
+                          <Image
+                            src={slide.imageSrc}
+                            alt={slide.title}
                               fill
                               sizes="(max-width: 768px) 100vw, 33vw"
                               className="object-cover transition-all duration-700 group-hover:scale-110"
-                              data-ai-hint={slide.imageHint}
-                            />
+                            data-ai-hint={slide.imageHint}
+                          />
                             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent opacity-40 group-hover:opacity-30 transition-opacity" />
                             
                             {/* Icon overlay */}
@@ -545,7 +545,7 @@ export default function LandingPage() {
                               whileHover={{ scale: 1.2, rotate: 10 }}
                             >
                               <div className="h-full w-full rounded-full bg-background/90 flex items-center justify-center">
-                                {slide.icon}
+                             {slide.icon}
                               </div>
                             </motion.div>
                           </div>
@@ -568,13 +568,13 @@ export default function LandingPage() {
                           </div>
                         </div>
                       </motion.div>
-                    </motion.div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
+                  </motion.div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
               <CarouselPrevious className="left-[-20px] sm:left-[-50px] bg-background border border-border hover:bg-accent/5 hover:border-accent/50 transition-colors" />
               <CarouselNext className="right-[-20px] sm:right-[-50px] bg-background border border-border hover:bg-accent/5 hover:border-accent/50 transition-colors" />
-            </Carousel>
+          </Carousel>
             
             {/* Additional indicators for carousel */}
             <div className="flex justify-center mt-12 gap-2">
@@ -586,10 +586,10 @@ export default function LandingPage() {
                 />
               ))}
             </div>
-          </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Benefits Section */}
+      {/* Benefits Section */}
         <section className="py-20 md:py-28 relative overflow-hidden">
           {/* Background with gradient and texture */}
           <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background">
@@ -763,12 +763,12 @@ export default function LandingPage() {
             </svg>
           </div>
           
-          <div className="container px-4 md:px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+        <div className="container px-4 md:px-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
               className="text-center mb-16"
             >
               <span className="px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20 mb-4 inline-block">
@@ -779,8 +779,8 @@ export default function LandingPage() {
               </h2>
               <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
                 Real stories from people who transformed their health journey with DiaDoc.
-              </p>
-            </motion.div>
+            </p>
+          </motion.div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               {[
@@ -803,16 +803,16 @@ export default function LandingPage() {
                   avatar: "https://randomuser.me/api/portraits/men/46.jpg"
                 }
               ].map((testimonial, index) => (
-                <motion.div
+                  <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
-                >
-                  <motion.div 
+                  >
+                    <motion.div
                     className="bg-card border border-border/50 p-6 rounded-2xl h-full flex flex-col relative"
-                    whileHover={{ 
+                       whileHover={{ 
                       y: -10, 
                       boxShadow: "0 15px 30px -10px rgba(0,0,0,0.1)"
                     }}
@@ -824,7 +824,7 @@ export default function LandingPage() {
                     <p className="text-foreground italic mb-6 flex-grow">"{testimonial.quote}"</p>
                     
                     <div className="flex items-center mt-4">
-                      <Image 
+                        <Image
                         src={testimonial.avatar} 
                         alt={testimonial.author}
                         width={48}
@@ -835,13 +835,13 @@ export default function LandingPage() {
                         <h4 className="font-semibold text-foreground">{testimonial.author}</h4>
                         <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                       </div>
-                    </div>
+                        </div>
                   </motion.div>
                 </motion.div>
               ))}
             </div>
-          </div>
-        </section>
+        </div>
+      </section>
 
         {/* Final CTA Section */}
         <section className="py-24 md:py-32 relative overflow-hidden">
@@ -876,7 +876,7 @@ export default function LandingPage() {
           
           <div className="container px-4 md:px-6 relative z-10">
             <div className="max-w-4xl mx-auto text-center text-white">
-              <motion.h2 
+          <motion.h2 
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.5 }}
@@ -888,9 +888,9 @@ export default function LandingPage() {
               
               <motion.p 
                 initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
                 className="text-xl md:text-2xl font-light mb-10 max-w-3xl mx-auto opacity-90"
               >
                 Join thousands who are already taking control of their diabetes with personalized AI insights, simplified tracking, and a supportive community.
@@ -898,28 +898,28 @@ export default function LandingPage() {
               
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}
                 className="flex flex-col sm:flex-row justify-center gap-4 items-center"
-              >
-                <motion.div
+          >
+          <motion.div 
                   whileHover={{ 
                     scale: 1.05, 
                     boxShadow: "0 0 25px rgba(255, 255, 255, 0.5)" 
                   }}
-                  whileTap={{ scale: 0.98 }}
+            whileTap={{ scale: 0.98 }}
                   className="w-full sm:w-auto"
-                >
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    asChild
+          >
+            <Button
+              size="lg"
+              variant="secondary" 
+              asChild
                     className="w-full sm:w-auto text-lg px-10 py-7 rounded-xl font-semibold shadow-xl bg-white text-primary hover:bg-white/90 border-0"
-                  >
-                    <Link href="/register">Sign Up Now</Link>
-                  </Button>
-                </motion.div>
+            >
+              <Link href="/register">Sign Up Now</Link>
+            </Button>
+          </motion.div>
                 
                 <motion.div
                   whileHover={{ 
@@ -958,8 +958,8 @@ export default function LandingPage() {
                 </div>
               </motion.div>
             </div>
-          </div>
-        </section>
+        </div>
+      </section>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ interface GlassmorphicSubmitButtonProps {
   type?: "button" | "submit" | "reset";
   onClick?: () => void;
   className?: string;
+  isLight?: boolean;
 }
 
 export function GlassmorphicSubmitButton({
@@ -15,11 +16,19 @@ export function GlassmorphicSubmitButton({
   type = "submit",
   onClick,
   className = "",
+  isLight = false,
 }: GlassmorphicSubmitButtonProps) {
   return (
     <motion.div
-      className={`relative overflow-hidden rounded-full shadow-glow ${className}`}
-      animate={{ 
+      className={`relative overflow-hidden rounded-full ${isLight ? "shadow-lg" : "shadow-glow"} ${className}`}
+      animate={isLight ? { 
+        scale: [1, 0.99, 1],
+        boxShadow: [
+          '0 10px 25px -5px rgba(80, 70, 230, 0.3)', 
+          '0 8px 20px -5px rgba(80, 70, 230, 0.2)', 
+          '0 10px 25px -5px rgba(80, 70, 230, 0.3)'
+        ] 
+      } : { 
         scale: [1, 0.98, 1], 
         boxShadow: [
           '0 0 12px rgba(0,221,255,0.2)', 
@@ -39,7 +48,11 @@ export function GlassmorphicSubmitButton({
         type={type}
         disabled={loading}
         onClick={onClick}
-        className="w-full py-3 px-4 text-lg font-semibold bg-[rgba(0,163,255,0.8)] text-white transition-colors duration-200 relative overflow-hidden z-10 rounded-full"
+        className={`w-full py-3 px-4 text-lg font-semibold ${
+          isLight 
+            ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-500 hover:to-violet-500" 
+            : "bg-[rgba(0,163,255,0.8)] text-white"
+        } transition-colors duration-200 relative overflow-hidden z-10 rounded-full`}
       >
         {loading ? (
           <div className="flex items-center justify-center">
@@ -50,15 +63,65 @@ export function GlassmorphicSubmitButton({
             Processing...
           </div>
         ) : (
-          text
+          <span className="relative z-10 flex items-center justify-center">
+            {text}
+            {isLight && (
+              <motion.span 
+                className="ml-2"
+                animate={{ x: [0, 5, 0] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+              >
+                →
+              </motion.span>
+            )}
+          </span>
         )}
       </button>
       
-      {/* Liquid gradient hover effect */}
-      <span className="absolute top-0 left-0 w-full h-full pointer-events-none bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-0"></span>
+      {/* Liquid gradient hover effect - enhanced for light theme */}
+      <span 
+        className={`absolute top-0 left-0 w-full h-full pointer-events-none ${
+          isLight 
+            ? "bg-gradient-to-r from-transparent via-white/40 to-transparent" 
+            : "bg-gradient-to-r from-transparent via-white/20 to-transparent"
+        } -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-0`}
+      />
       
-      {/* Subtle inner glow */}
-      <span className="absolute inset-0 w-full h-full bg-gradient-to-tr from-accent/10 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
+      {/* Subtle inner glow - enhanced for light theme */}
+      <span 
+        className={`absolute inset-0 w-full h-full ${
+          isLight 
+            ? "bg-gradient-to-tr from-pink-400/20 to-transparent" 
+            : "bg-gradient-to-tr from-accent/10 to-transparent"
+        } rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+      />
+
+      {/* Animated particles for light theme */}
+      {isLight && !loading && (
+        <>
+          {[...Array(4)].map((_, i) => (
+            <motion.span
+              key={`particle-${i}`}
+              className="absolute w-2 h-2 rounded-full bg-white opacity-50"
+              style={{
+                x: `${70 + i * 10}%`,
+                y: "50%",
+              }}
+              animate={{
+                opacity: [0, 0.8, 0],
+                scale: [0, 1, 0],
+                x: [`${70 + i * 10}%`, `${80 + i * 15}%`],
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                delay: i * 0.3,
+                repeatDelay: 0.2
+              }}
+            />
+          ))}
+        </>
+      )}
     </motion.div>
   );
 } 
