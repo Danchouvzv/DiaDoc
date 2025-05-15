@@ -63,6 +63,7 @@ export default function DashboardLayout({
     { path: '/dashboard/log-glucose', label: 'Log Glucose', icon: Droplet },
     { path: '/dashboard/log-food', label: 'Log Food', icon: Utensils },
     { path: '/dashboard/log-activity', label: 'Log Activity', icon: Activity },
+    { path: '/dashboard/reports', label: 'Reports', icon: LineChart },
     { path: '/dashboard/insights', label: 'Insights', icon: LineChart },
     { path: '/dashboard/wellbeing', label: 'Wellbeing', icon: Heart },
     { path: '/dashboard/settings', label: 'Settings', icon: Settings },
