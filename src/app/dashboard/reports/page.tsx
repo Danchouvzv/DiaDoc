@@ -1,4 +1,5 @@
-import { Metadata } from 'next';
+'use client';
+
 import { useState } from 'react';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Card } from '@/components/ui/card';
@@ -8,11 +9,6 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'react-hot-toast';
 import { DateRange } from 'react-day-picker';
-
-export const metadata: Metadata = {
-  title: 'Reports & Export - DiaDoc',
-  description: 'Export and analyze your health data in various formats',
-};
 
 export default function ReportsPage() {
   const [selectedFormat, setSelectedFormat] = useState('pdf');
