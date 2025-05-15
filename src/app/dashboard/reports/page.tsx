@@ -8,8 +8,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: 'Export Data - DiaDoc',
-  description: 'Export your health data in various formats',
+  title: 'Reports & Export - DiaDoc',
+  description: 'Export and analyze your health data in various formats',
 };
 
 export default function ReportsPage() {
@@ -50,15 +50,17 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-8">Export Health Data</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight">Reports & Export</h2>
+      </div>
       
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Date Range</h2>
+          <h3 className="text-xl font-semibold mb-4">Date Range</h3>
           <DateRangePicker />
           
-          <h2 className="text-xl font-semibold mt-6 mb-4">Data to Include</h2>
+          <h3 className="text-xl font-semibold mt-6 mb-4">Data to Include</h3>
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <Checkbox id="glucose" defaultChecked />
@@ -80,7 +82,7 @@ export default function ReportsPage() {
         </Card>
 
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Export Format</h2>
+          <h3 className="text-xl font-semibold mb-4">Export Format</h3>
           <RadioGroup defaultValue="pdf" className="space-y-4">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="pdf" id="pdf" />
