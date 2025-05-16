@@ -6,10 +6,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { 
   User, Bell, Shield, Moon, Sun, Smartphone, Globe, 
-  Palette, BarChart3, Volume2, Eye, Lock, LogOut, Save, ArrowLeft
+  Palette, BarChart3, Volume2, Eye, Lock, LogOut, Save, ArrowLeft,
+  Check, RefreshCw, AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { settingsService, UserSettings, defaultSettings } from "@/lib/settings-service";
 
 // Animation variants
 const containerVariants = {
@@ -55,28 +58,15 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [profileImage, setProfileImage] = useState("/default-avatar.png");
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasChanges, setHasChanges] = useState(false);
   
-  // Form states
+  // Состояния для настроек пользователя
+  const [settings, setSettings] = useState<UserSettings>(defaultSettings);
+  
+  // Форма профиля
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [language, setLanguage] = useState("english");
-  const [glucoseUnit, setGlucoseUnit] = useState("mg/dL");
-  const [weightUnit, setWeightUnit] = useState("kg");
-  
-  // Дополнительные состояния для новых разделов
-  const [selectedColorTheme, setSelectedColorTheme] = useState("blue");
-  const [fontSize, setFontSize] = useState("Medium");
-  const [reduceMotion, setReduceMotion] = useState(false);
-  const [carbUnit, setCarbUnit] = useState("grams");
-  const [timeFormat, setTimeFormat] = useState("12h");
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [shareWithHealthcare, setShareWithHealthcare] = useState(true);
-  const [shareForResearch, setShareForResearch] = useState(true);
-  const [allowMarketing, setAllowMarketing] = useState(false);
   
   useEffect(() => {
     setMounted(true);
@@ -92,48 +82,163 @@ export default function SettingsPage() {
   
   useEffect(() => {
     if (mounted) {
-      setDarkMode(theme === "dark");
+      // При монтировании компонента устанавливаем тему в соответствии с настройками
+      if (settings.theme === 'system') {
+        setTheme('system');
+      } else {
+        setTheme(settings.theme);
+      }
     }
-  }, [theme, mounted]);
+  }, [settings.theme, mounted, setTheme]);
   
+  // Загрузка настроек пользователя
   useEffect(() => {
-    if (user) {
+    if (user?.uid) {
       setName(user.displayName || "");
       setEmail(user.email || "");
       setProfileImage(user.photoURL || "/default-avatar.png");
+      
+      // Загружаем настройки пользователя
+      const loadUserSettings = async () => {
+        try {
+          setIsLoading(true);
+          const userSettings = await settingsService.getUserSettings(user.uid);
+          setSettings(userSettings);
+          
+          // Установим тему в соответствии с настройками
+          if (userSettings.theme === 'system') {
+            setTheme('system');
+          } else {
+            setTheme(userSettings.theme);
+          }
+        } catch (error) {
+          console.error("Error loading user settings:", error);
+          toast.error("Не удалось загрузить настройки пользователя");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      loadUserSettings();
     }
-  }, [user]);
+  }, [user, setTheme]);
   
-  const handleThemeChange = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-    setDarkMode(!darkMode);
+  // Обработка изменения темы
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    const updatedSettings = { ...settings, theme: newTheme };
+    setSettings(updatedSettings);
+    setTheme(newTheme === 'system' ? 'system' : newTheme);
+    setHasChanges(true);
   };
   
-  const handleColorThemeChange = (color) => {
-    setSelectedColorTheme(color);
-    // В реальном приложении здесь бы менялась цветовая схема
+  // Обработка изменения цветовой схемы
+  const handleColorThemeChange = (color: UserSettings['colorTheme']) => {
+    setSettings({ ...settings, colorTheme: color });
+    setHasChanges(true);
   };
   
-  const handleFontSizeChange = (size) => {
-    setFontSize(size);
-    // В реальном приложении здесь бы менялся размер шрифта
+  // Обработка изменения размера шрифта
+  const handleFontSizeChange = (size: UserSettings['fontSize']) => {
+    setSettings({ ...settings, fontSize: size });
+    setHasChanges(true);
   };
   
+  // Обработка изменения настройки снижения анимации
   const toggleReduceMotion = () => {
-    setReduceMotion(!reduceMotion);
-    // В реальном приложении здесь бы менялись настройки анимаций
+    setSettings({ ...settings, reduceMotion: !settings.reduceMotion });
+    setHasChanges(true);
   };
   
+  // Обработка изменения настройки двухфакторной аутентификации
   const toggleTwoFactor = () => {
-    setTwoFactorEnabled(!twoFactorEnabled);
-    // В реальном приложении здесь бы включалась/выключалась двухфакторная аутентификация
+    setSettings({ ...settings, twoFactorEnabled: !settings.twoFactorEnabled });
+    setHasChanges(true);
   };
   
+  // Обработка изменения настроек уведомлений
+  const handleNotificationChange = (key: keyof Pick<UserSettings, 'notificationsEnabled' | 'emailNotifications' | 'pushNotifications' | 'reminderNotifications'>, value: boolean) => {
+    setSettings({ ...settings, [key]: value });
+    setHasChanges(true);
+  };
+  
+  // Обработка изменения настроек единиц измерения
+  const handleUnitChange = <K extends keyof Pick<UserSettings, 'glucoseUnit' | 'weightUnit' | 'carbUnit' | 'timeFormat'>>(
+    key: K, 
+    value: UserSettings[K]
+  ) => {
+    setSettings({ ...settings, [key]: value });
+    setHasChanges(true);
+  };
+  
+  // Обработка изменения настроек приватности
+  const handlePrivacyChange = (key: keyof Pick<UserSettings, 'shareWithHealthcare' | 'shareForResearch' | 'allowMarketing'>, value: boolean) => {
+    setSettings({ ...settings, [key]: value });
+    setHasChanges(true);
+  };
+  
+  // Обработка изменения языка
+  const handleLanguageChange = (language: UserSettings['language']) => {
+    setSettings({ ...settings, language });
+    setHasChanges(true);
+  };
+  
+  // Сохранение настроек
   const handleSaveSettings = async () => {
+    if (!user?.uid) return;
+    
     setSaving(true);
-    // Mock save delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setSaving(false);
+    try {
+      // Сохраняем настройки в Firebase
+      await settingsService.updateUserSettings(user.uid, settings);
+      
+      // Устанавливаем тему в соответствии с настройками
+      if (settings.theme === 'system') {
+        setTheme('system');
+      } else {
+        setTheme(settings.theme);
+      }
+      
+      // Показываем уведомление об успешном сохранении
+      toast.success("Настройки успешно сохранены");
+      setHasChanges(false);
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast.error("Не удалось сохранить настройки");
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  // Сброс настроек
+  const handleResetSettings = async () => {
+    if (!user?.uid) return;
+    
+    if (window.confirm("Вы уверены, что хотите сбросить все настройки до значений по умолчанию?")) {
+      setSaving(true);
+      try {
+        // Сбрасываем настройки до значений по умолчанию
+        await settingsService.resetSettings(user.uid);
+        
+        // Обновляем состояние
+        setSettings(defaultSettings);
+        
+        // Устанавливаем тему в соответствии с настройками по умолчанию
+        if (defaultSettings.theme === 'system') {
+          setTheme('system');
+        } else {
+          setTheme(defaultSettings.theme);
+        }
+        
+        // Показываем уведомление об успешном сбросе
+        toast.success("Настройки успешно сброшены");
+        setHasChanges(false);
+      } catch (error) {
+        console.error("Error resetting settings:", error);
+        toast.error("Не удалось сбросить настройки");
+      } finally {
+        setSaving(false);
+      }
+    }
   };
   
   const handleSignOut = () => {
@@ -391,20 +496,20 @@ export default function SettingsPage() {
                         <input 
                           type="checkbox" 
                           id="enableAll" 
-                          checked={notificationsEnabled}
-                          onChange={() => setNotificationsEnabled(!notificationsEnabled)}
+                          checked={settings.notificationsEnabled}
+                          onChange={() => handleNotificationChange('notificationsEnabled', !settings.notificationsEnabled)}
                           className="sr-only"
                         />
                         <div
                           className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                            notificationsEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                            settings.notificationsEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
                           }`}
                         >
                           <motion.div 
                             layout
                             className="bg-white w-5 h-5 rounded-full shadow-md"
                             animate={{
-                              x: notificationsEnabled ? 28 : 0
+                              x: settings.notificationsEnabled ? 28 : 0
                             }}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           />
@@ -423,21 +528,21 @@ export default function SettingsPage() {
                         <input 
                           type="checkbox" 
                           id="emailNotifications" 
-                          checked={emailNotifications}
-                          onChange={() => setEmailNotifications(!emailNotifications)}
-                          disabled={!notificationsEnabled}
+                          checked={settings.emailNotifications}
+                          onChange={() => handleNotificationChange('emailNotifications', !settings.emailNotifications)}
+                          disabled={!settings.notificationsEnabled}
                           className="sr-only"
                         />
                         <div
                           className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                            emailNotifications && notificationsEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
-                          } ${!notificationsEnabled ? "opacity-50" : ""}`}
+                            settings.emailNotifications && settings.notificationsEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                          } ${!settings.notificationsEnabled ? "opacity-50" : ""}`}
                         >
                           <motion.div 
                             layout
                             className="bg-white w-5 h-5 rounded-full shadow-md"
                             animate={{
-                              x: emailNotifications && notificationsEnabled ? 28 : 0
+                              x: settings.emailNotifications && settings.notificationsEnabled ? 28 : 0
                             }}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           />
@@ -454,21 +559,21 @@ export default function SettingsPage() {
                         <input 
                           type="checkbox" 
                           id="pushNotifications" 
-                          checked={pushNotifications}
-                          onChange={() => setPushNotifications(!pushNotifications)}
-                          disabled={!notificationsEnabled}
+                          checked={settings.pushNotifications}
+                          onChange={() => handleNotificationChange('pushNotifications', !settings.pushNotifications)}
+                          disabled={!settings.notificationsEnabled}
                           className="sr-only"
                         />
                         <div
                           className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                            pushNotifications && notificationsEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
-                          } ${!notificationsEnabled ? "opacity-50" : ""}`}
+                            settings.pushNotifications && settings.notificationsEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                          } ${!settings.notificationsEnabled ? "opacity-50" : ""}`}
                         >
                           <motion.div 
                             layout
                             className="bg-white w-5 h-5 rounded-full shadow-md"
                             animate={{
-                              x: pushNotifications && notificationsEnabled ? 28 : 0
+                              x: settings.pushNotifications && settings.notificationsEnabled ? 28 : 0
                             }}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           />
@@ -476,30 +581,85 @@ export default function SettingsPage() {
                       </div>
                     </motion.div>
                     
-                    <motion.div variants={itemVariants} className="pt-4">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleSaveSettings}
-                        className="w-full bg-primary hover:bg-primary-600 text-white py-2 px-4 rounded-lg flex items-center justify-center font-medium"
-                        disabled={saving}
-                      >
-                        {saving ? (
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="mr-2"
-                          >
-                            <svg className="w-5 h-5" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                            </svg>
-                          </motion.div>
-                        ) : (
-                          <Save className="w-5 h-5 mr-2" />
-                        )}
-                        {saving ? "Saving..." : "Save Preferences"}
-                      </motion.button>
+                    <motion.div variants={itemVariants} className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium dark:text-white">Reminder Notifications</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Receive reminders for blood glucose checks and medication</p>
+                      </div>
+                      <div className="relative">
+                        <input 
+                          type="checkbox" 
+                          id="reminderNotifications" 
+                          checked={settings.reminderNotifications}
+                          onChange={() => handleNotificationChange('reminderNotifications', !settings.reminderNotifications)}
+                          disabled={!settings.notificationsEnabled}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
+                            settings.reminderNotifications && settings.notificationsEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                          } ${!settings.notificationsEnabled ? "opacity-50" : ""}`}
+                        >
+                          <motion.div 
+                            layout
+                            className="bg-white w-5 h-5 rounded-full shadow-md"
+                            animate={{
+                              x: settings.reminderNotifications && settings.notificationsEnabled ? 28 : 0
+                            }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="pt-4 flex flex-col gap-4">
+                      <div className="flex justify-between">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleResetSettings}
+                          className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg flex items-center justify-center font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+                          disabled={saving}
+                        >
+                          <RefreshCw className="w-5 h-5 mr-2" />
+                          Reset to Default
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleSaveSettings}
+                          className="bg-primary hover:bg-primary-600 text-white py-2 px-4 rounded-lg flex items-center justify-center font-medium"
+                          disabled={saving || !hasChanges}
+                        >
+                          {saving ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="mr-2"
+                            >
+                              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                              </svg>
+                            </motion.div>
+                          ) : (
+                            <Save className="w-5 h-5 mr-2" />
+                          )}
+                          {saving ? "Saving..." : "Save Changes"}
+                        </motion.button>
+                      </div>
+                      
+                      {hasChanges && (
+                        <motion.p 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-sm text-yellow-600 dark:text-yellow-400 flex items-center"
+                        >
+                          <AlertTriangle className="w-4 h-4 mr-2" />
+                          You have unsaved changes
+                        </motion.p>
+                      )}
                     </motion.div>
                   </motion.div>
                 </motion.div>
@@ -514,141 +674,200 @@ export default function SettingsPage() {
                   exit={{ opacity: 0, y: 20 }}
                   className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
                 >
-                  <h2 className="text-xl font-bold mb-4 dark:text-white">Appearance Settings</h2>
+                  <h2 className="text-xl font-bold mb-4 dark:text-white">Appearance</h2>
                   <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-                    <motion.div variants={itemVariants} className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium dark:text-white">Dark Mode</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Switch between light and dark mode</p>
-                      </div>
-                      <div className="relative">
-                        <input 
-                          type="checkbox" 
-                          id="darkMode" 
-                          checked={darkMode}
-                          onChange={handleThemeChange}
-                          className="sr-only"
-                        />
-                        <div
-                          className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                            darkMode ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                    <motion.div variants={itemVariants} className="grid gap-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Theme</label>
+                      <div className="grid grid-cols-3 gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleThemeChange('light')}
+                          className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 ${
+                            settings.theme === 'light'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
                           }`}
                         >
-                          <motion.div 
-                            layout
-                            className="bg-white w-5 h-5 rounded-full shadow-md flex items-center justify-center"
-                            animate={{
-                              x: darkMode ? 28 : 0
-                            }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                          >
-                            {darkMode ? <Moon className="w-3 h-3 text-primary" /> : <Sun className="w-3 h-3 text-amber-500" />}
-                          </motion.div>
-                        </div>
+                          <Sun className={`w-6 h-6 mb-2 ${settings.theme === 'light' ? "text-primary" : "text-gray-500 dark:text-gray-400"}`} />
+                          <span className={`text-sm font-medium ${settings.theme === 'light' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>Light</span>
+                          {settings.theme === 'light' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleThemeChange('dark')}
+                          className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 ${
+                            settings.theme === 'dark'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
+                          }`}
+                        >
+                          <Moon className={`w-6 h-6 mb-2 ${settings.theme === 'dark' ? "text-primary" : "text-gray-500 dark:text-gray-400"}`} />
+                          <span className={`text-sm font-medium ${settings.theme === 'dark' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>Dark</span>
+                          {settings.theme === 'dark' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleThemeChange('system')}
+                          className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 ${
+                            settings.theme === 'system'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
+                          }`}
+                        >
+                          <Smartphone className={`w-6 h-6 mb-2 ${settings.theme === 'system' ? "text-primary" : "text-gray-500 dark:text-gray-400"}`} />
+                          <span className={`text-sm font-medium ${settings.theme === 'system' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>System</span>
+                          {settings.theme === 'system' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
+                        </motion.button>
                       </div>
                     </motion.div>
                     
-                    <motion.hr variants={itemVariants} className="border-gray-200 dark:border-gray-700" />
-                    
-                    <motion.div variants={itemVariants} className="grid gap-2">
+                    <motion.div variants={itemVariants} className="grid gap-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Color Theme</label>
-                      <div className="grid grid-cols-5 gap-3">
-                        {['blue', 'green', 'purple', 'red', 'orange'].map((color) => (
+                      <div className="flex flex-wrap gap-3">
+                        {[
+                          { value: 'blue', label: 'Blue', color: 'bg-blue-500' },
+                          { value: 'green', label: 'Green', color: 'bg-green-500' },
+                          { value: 'purple', label: 'Purple', color: 'bg-purple-500' },
+                          { value: 'orange', label: 'Orange', color: 'bg-orange-500' },
+                          { value: 'red', label: 'Red', color: 'bg-red-500' },
+                        ].map((color) => (
                           <motion.button
-                            key={color}
+                            key={color.value}
                             whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleColorThemeChange(color)}
-                            className={`w-full h-10 rounded-lg ${
-                              color === 'blue' ? 'bg-blue-500' :
-                              color === 'green' ? 'bg-green-500' :
-                              color === 'purple' ? 'bg-purple-500' :
-                              color === 'red' ? 'bg-red-500' : 'bg-orange-500'
-                            } ${color === selectedColorTheme ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-gray-600' : ''}`}
-                            aria-label={`${color} theme`}
-                          />
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Primary color theme for buttons and interactive elements
-                      </p>
-                    </motion.div>
-                    
-                    <motion.div variants={itemVariants} className="grid gap-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Font Size</label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {['Small', 'Medium', 'Large'].map((size) => (
-                          <motion.button
-                            key={size}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleFontSizeChange(size)}
-                            className={`px-4 py-2 rounded-lg border ${
-                              size === fontSize 
-                                ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                                : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => handleColorThemeChange(color.value as UserSettings['colorTheme'])}
+                            className={`relative rounded-full w-10 h-10 flex items-center justify-center border-2 ${
+                              settings.colorTheme === color.value
+                                ? "border-gray-800 dark:border-white"
+                                : "border-transparent"
                             }`}
                           >
-                            {size}
+                            <div className={`rounded-full w-8 h-8 ${color.color}`}></div>
+                            {settings.colorTheme === color.value && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="absolute inset-0 flex items-center justify-center"
+                              >
+                                <Check className="w-4 h-4 text-white" />
+                              </motion.div>
+                            )}
                           </motion.button>
                         ))}
                       </div>
                     </motion.div>
                     
-                    <motion.div variants={itemVariants} className="grid gap-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Animation Settings</label>
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-700 dark:text-gray-300">Reduce Motion</span>
-                        <div className="relative">
-                          <input 
-                            type="checkbox" 
-                            id="reduceMotion" 
-                            checked={reduceMotion}
-                            onChange={toggleReduceMotion}
-                            className="sr-only"
-                          />
-                          <div
-                            className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                              reduceMotion ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                    <motion.div variants={itemVariants} className="grid gap-4">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Font Size</label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { value: 'small', label: 'Small', className: 'text-sm' },
+                          { value: 'medium', label: 'Medium', className: 'text-base' },
+                          { value: 'large', label: 'Large', className: 'text-lg' },
+                        ].map((size) => (
+                          <motion.button
+                            key={size.value}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleFontSizeChange(size.value as UserSettings['fontSize'])}
+                            className={`flex items-center justify-center p-3 rounded-lg border-2 ${
+                              settings.fontSize === size.value
+                                ? "border-primary bg-primary/10"
+                                : "border-gray-200 dark:border-gray-700"
                             }`}
                           >
-                            <motion.div 
-                              layout
-                              className="bg-white w-5 h-5 rounded-full shadow-md"
-                              animate={{
-                                x: reduceMotion ? 28 : 0
-                              }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            />
-                          </div>
+                            <span className={`font-medium ${size.className} ${
+                              settings.fontSize === size.value ? "text-primary" : "text-gray-700 dark:text-gray-300"
+                            }`}>{size.label}</span>
+                            {settings.fontSize === size.value && <Check className="w-4 h-4 text-primary ml-2" />}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium dark:text-white">Reduce Motion</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Minimize animations throughout the app</p>
+                      </div>
+                      <div className="relative">
+                        <input 
+                          type="checkbox" 
+                          id="reduceMotion" 
+                          checked={settings.reduceMotion}
+                          onChange={toggleReduceMotion}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
+                            settings.reduceMotion ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                          }`}
+                        >
+                          <motion.div 
+                            layout
+                            className="bg-white w-5 h-5 rounded-full shadow-md"
+                            animate={{
+                              x: settings.reduceMotion ? 28 : 0
+                            }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          />
                         </div>
                       </div>
                     </motion.div>
                     
-                    <motion.div variants={itemVariants} className="pt-4">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleSaveSettings}
-                        className="w-full bg-primary hover:bg-primary-600 text-white py-2 px-4 rounded-lg flex items-center justify-center font-medium"
-                        disabled={saving}
-                      >
-                        {saving ? (
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="mr-2"
-                          >
-                            <svg className="w-5 h-5" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                            </svg>
-                          </motion.div>
-                        ) : (
-                          <Save className="w-5 h-5 mr-2" />
-                        )}
-                        {saving ? "Saving..." : "Save Preferences"}
-                      </motion.button>
+                    <motion.div variants={itemVariants} className="pt-4 flex flex-col gap-4">
+                      <div className="flex justify-between">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleResetSettings}
+                          className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg flex items-center justify-center font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+                          disabled={saving}
+                        >
+                          <RefreshCw className="w-5 h-5 mr-2" />
+                          Reset to Default
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleSaveSettings}
+                          className="bg-primary hover:bg-primary-600 text-white py-2 px-4 rounded-lg flex items-center justify-center font-medium"
+                          disabled={saving || !hasChanges}
+                        >
+                          {saving ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="mr-2"
+                            >
+                              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                              </svg>
+                            </motion.div>
+                          ) : (
+                            <Save className="w-5 h-5 mr-2" />
+                          )}
+                          {saving ? "Saving..." : "Save Changes"}
+                        </motion.button>
+                      </div>
+                      
+                      {hasChanges && (
+                        <motion.p 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-sm text-yellow-600 dark:text-yellow-400 flex items-center"
+                        >
+                          <AlertTriangle className="w-4 h-4 mr-2" />
+                          You have unsaved changes
+                        </motion.p>
+                      )}
                     </motion.div>
                   </motion.div>
                 </motion.div>
@@ -663,167 +882,196 @@ export default function SettingsPage() {
                   exit={{ opacity: 0, y: 20 }}
                   className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
                 >
-                  <h2 className="text-xl font-bold mb-4 dark:text-white">Units & Measurement Settings</h2>
+                  <h2 className="text-xl font-bold mb-4 dark:text-white">Units & Measurement</h2>
                   <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-                    <motion.div variants={itemVariants} className="grid gap-2">
+                    <motion.div variants={itemVariants} className="grid gap-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Glucose Units</label>
                       <div className="grid grid-cols-2 gap-3">
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => setGlucoseUnit("mg/dL")}
-                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
-                            glucoseUnit === "mg/dL" 
-                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          onClick={() => handleUnitChange('glucoseUnit', 'mg/dL')}
+                          className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 ${
+                            settings.glucoseUnit === 'mg/dL'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
                           }`}
                         >
-                          <span className="font-medium">mg/dL</span>
-                          <span className="text-xs ml-1 text-gray-500 dark:text-gray-400">(US, Default)</span>
+                          <span className={`text-lg font-medium ${settings.glucoseUnit === 'mg/dL' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>mg/dL</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">United States</span>
+                          {settings.glucoseUnit === 'mg/dL' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
                         </motion.button>
                         
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => setGlucoseUnit("mmol/L")}
-                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
-                            glucoseUnit === "mmol/L" 
-                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          onClick={() => handleUnitChange('glucoseUnit', 'mmol/L')}
+                          className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 ${
+                            settings.glucoseUnit === 'mmol/L'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
                           }`}
                         >
-                          <span className="font-medium">mmol/L</span>
-                          <span className="text-xs ml-1 text-gray-500 dark:text-gray-400">(International)</span>
+                          <span className={`text-lg font-medium ${settings.glucoseUnit === 'mmol/L' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>mmol/L</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">International</span>
+                          {settings.glucoseUnit === 'mmol/L' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
                         </motion.button>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Units used for blood glucose readings throughout the app
-                      </p>
                     </motion.div>
                     
-                    <motion.hr variants={itemVariants} className="border-gray-200 dark:border-gray-700" />
-                    
-                    <motion.div variants={itemVariants} className="grid gap-2">
+                    <motion.div variants={itemVariants} className="grid gap-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Weight Units</label>
                       <div className="grid grid-cols-2 gap-3">
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => setWeightUnit("kg")}
-                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
-                            weightUnit === "kg" 
-                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          onClick={() => handleUnitChange('weightUnit', 'kg')}
+                          className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 ${
+                            settings.weightUnit === 'kg'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
                           }`}
                         >
-                          <span className="font-medium">Kilograms (kg)</span>
+                          <span className={`text-lg font-medium ${settings.weightUnit === 'kg' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>kg</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Kilograms</span>
+                          {settings.weightUnit === 'kg' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
                         </motion.button>
                         
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => setWeightUnit("lb")}
-                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
-                            weightUnit === "lb" 
-                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          onClick={() => handleUnitChange('weightUnit', 'lb')}
+                          className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 ${
+                            settings.weightUnit === 'lb'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
                           }`}
                         >
-                          <span className="font-medium">Pounds (lb)</span>
+                          <span className={`text-lg font-medium ${settings.weightUnit === 'lb' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>lb</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Pounds</span>
+                          {settings.weightUnit === 'lb' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
                         </motion.button>
                       </div>
                     </motion.div>
                     
-                    <motion.div variants={itemVariants} className="grid gap-2">
+                    <motion.div variants={itemVariants} className="grid gap-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Carbohydrate Units</label>
                       <div className="grid grid-cols-2 gap-3">
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => setCarbUnit("grams")}
-                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
-                            carbUnit === "grams" 
-                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          onClick={() => handleUnitChange('carbUnit', 'g')}
+                          className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 ${
+                            settings.carbUnit === 'g'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
                           }`}
                         >
-                          <span className="font-medium">Grams (g)</span>
+                          <span className={`text-lg font-medium ${settings.carbUnit === 'g' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>g</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Grams</span>
+                          {settings.carbUnit === 'g' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
                         </motion.button>
                         
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => setCarbUnit("exchanges")}
-                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
-                            carbUnit === "exchanges" 
-                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          onClick={() => handleUnitChange('carbUnit', 'oz')}
+                          className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 ${
+                            settings.carbUnit === 'oz'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
                           }`}
                         >
-                          <span className="font-medium">Exchanges</span>
+                          <span className={`text-lg font-medium ${settings.carbUnit === 'oz' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>oz</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Ounces</span>
+                          {settings.carbUnit === 'oz' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
                         </motion.button>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        How carbohydrates are measured in food entries
-                      </p>
                     </motion.div>
                     
-                    <motion.div variants={itemVariants} className="grid gap-2">
+                    <motion.div variants={itemVariants} className="grid gap-4">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Time Format</label>
                       <div className="grid grid-cols-2 gap-3">
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => setTimeFormat("12h")}
-                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
-                            timeFormat === "12h" 
-                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          onClick={() => handleUnitChange('timeFormat', '12h')}
+                          className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 ${
+                            settings.timeFormat === '12h'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
                           }`}
                         >
-                          <span className="font-medium">12-hour</span>
-                          <span className="text-xs ml-1 text-gray-500 dark:text-gray-400">(AM/PM)</span>
+                          <span className={`text-lg font-medium ${settings.timeFormat === '12h' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>12-hour</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">AM/PM</span>
+                          {settings.timeFormat === '12h' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
                         </motion.button>
                         
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => setTimeFormat("24h")}
-                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
-                            timeFormat === "24h" 
-                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
-                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          onClick={() => handleUnitChange('timeFormat', '24h')}
+                          className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 ${
+                            settings.timeFormat === '24h'
+                              ? "border-primary bg-primary/10"
+                              : "border-gray-200 dark:border-gray-700"
                           }`}
                         >
-                          <span className="font-medium">24-hour</span>
+                          <span className={`text-lg font-medium ${settings.timeFormat === '24h' ? "text-primary" : "text-gray-700 dark:text-gray-300"}`}>24-hour</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Military</span>
+                          {settings.timeFormat === '24h' && <Check className="w-4 h-4 text-primary absolute top-2 right-2" />}
                         </motion.button>
                       </div>
                     </motion.div>
                     
-                    <motion.div variants={itemVariants} className="pt-4">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleSaveSettings}
-                        className="w-full bg-primary hover:bg-primary-600 text-white py-2 px-4 rounded-lg flex items-center justify-center font-medium"
-                        disabled={saving}
-                      >
-                        {saving ? (
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="mr-2"
-                          >
-                            <svg className="w-5 h-5" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                            </svg>
-                          </motion.div>
-                        ) : (
-                          <Save className="w-5 h-5 mr-2" />
-                        )}
-                        {saving ? "Saving..." : "Save Units Preferences"}
-                      </motion.button>
+                    <motion.div variants={itemVariants} className="pt-4 flex flex-col gap-4">
+                      <div className="flex justify-between">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleResetSettings}
+                          className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg flex items-center justify-center font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+                          disabled={saving}
+                        >
+                          <RefreshCw className="w-5 h-5 mr-2" />
+                          Reset to Default
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleSaveSettings}
+                          className="bg-primary hover:bg-primary-600 text-white py-2 px-4 rounded-lg flex items-center justify-center font-medium"
+                          disabled={saving || !hasChanges}
+                        >
+                          {saving ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="mr-2"
+                            >
+                              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                              </svg>
+                            </motion.div>
+                          ) : (
+                            <Save className="w-5 h-5 mr-2" />
+                          )}
+                          {saving ? "Saving..." : "Save Changes"}
+                        </motion.button>
+                      </div>
+                      
+                      {hasChanges && (
+                        <motion.p 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-sm text-yellow-600 dark:text-yellow-400 flex items-center"
+                        >
+                          <AlertTriangle className="w-4 h-4 mr-2" />
+                          You have unsaved changes
+                        </motion.p>
+                      )}
                     </motion.div>
                   </motion.div>
                 </motion.div>
@@ -849,20 +1097,20 @@ export default function SettingsPage() {
                         <input 
                           type="checkbox" 
                           id="twoFactor" 
-                          checked={twoFactorEnabled}
-                          onChange={toggleTwoFactor}
+                          checked={settings.twoFactorEnabled}
+                          onChange={(e) => handlePrivacyChange('twoFactorEnabled', e.target.checked)}
                           className="sr-only"
                         />
                         <div
                           className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                            twoFactorEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                            settings.twoFactorEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
                           }`}
                         >
                           <motion.div 
                             layout
                             className="bg-white w-5 h-5 rounded-full shadow-md"
                             animate={{
-                              x: twoFactorEnabled ? 28 : 0
+                              x: settings.twoFactorEnabled ? 28 : 0
                             }}
                             transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           />
@@ -884,20 +1132,20 @@ export default function SettingsPage() {
                           <input 
                             type="checkbox" 
                             id="shareHealthcare" 
-                            checked={shareWithHealthcare}
-                            onChange={() => setShareWithHealthcare(!shareWithHealthcare)}
+                            checked={settings.shareWithHealthcare}
+                            onChange={(e) => handlePrivacyChange('shareWithHealthcare', e.target.checked)}
                             className="sr-only"
                           />
                           <div
                             className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                              shareWithHealthcare ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                              settings.shareWithHealthcare ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
                             }`}
                           >
                             <motion.div 
                               layout
                               className="bg-white w-4 h-4 rounded-full shadow-md"
                               animate={{
-                                x: shareWithHealthcare ? 21 : 0
+                                x: settings.shareWithHealthcare ? 21 : 0
                               }}
                               transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             />
@@ -914,20 +1162,20 @@ export default function SettingsPage() {
                           <input 
                             type="checkbox" 
                             id="shareResearch" 
-                            checked={shareForResearch}
-                            onChange={() => setShareForResearch(!shareForResearch)}
+                            checked={settings.shareForResearch}
+                            onChange={(e) => handlePrivacyChange('shareForResearch', e.target.checked)}
                             className="sr-only"
                           />
                           <div
                             className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                              shareForResearch ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                              settings.shareForResearch ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
                             }`}
                           >
                             <motion.div 
                               layout
                               className="bg-white w-4 h-4 rounded-full shadow-md"
                               animate={{
-                                x: shareForResearch ? 21 : 0
+                                x: settings.shareForResearch ? 21 : 0
                               }}
                               transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             />
@@ -944,20 +1192,20 @@ export default function SettingsPage() {
                           <input 
                             type="checkbox" 
                             id="shareMarketing" 
-                            checked={allowMarketing}
-                            onChange={() => setAllowMarketing(!allowMarketing)}
+                            checked={settings.allowMarketing}
+                            onChange={(e) => handlePrivacyChange('allowMarketing', e.target.checked)}
                             className="sr-only"
                           />
                           <div
                             className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
-                              allowMarketing ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                              settings.allowMarketing ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
                             }`}
                           >
                             <motion.div 
                               layout
                               className="bg-white w-4 h-4 rounded-full shadow-md"
                               animate={{
-                                x: allowMarketing ? 21 : 0
+                                x: settings.allowMarketing ? 21 : 0
                               }}
                               transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             />
@@ -1061,9 +1309,37 @@ export default function SettingsPage() {
 // Edit icon component
 function Edit({ className = "w-6 h-6" }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+      />
     </svg>
   );
-} 
+}
+
+// Определим глобальные стили для настроек
+const getColorThemeClass = (colorTheme: string) => {
+  switch (colorTheme) {
+    case 'blue':
+      return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20';
+    case 'green':
+      return 'text-green-600 bg-green-50 dark:bg-green-900/20';
+    case 'purple':
+      return 'text-purple-600 bg-purple-50 dark:bg-purple-900/20';
+    case 'orange':
+      return 'text-orange-600 bg-orange-50 dark:bg-orange-900/20';
+    case 'red':
+      return 'text-red-600 bg-red-50 dark:bg-red-900/20';
+    default:
+      return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20';
+  }
+}; 
