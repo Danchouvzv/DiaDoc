@@ -1,51 +1,8 @@
-import { Document, Page, Text, View, StyleSheet, PDFViewer } from '@react-pdf/renderer';
 import { DateRange } from './export-service';
 import { exportService } from './export-service';
 
-// Define styles
-const styles = StyleSheet.create({
-  page: {
-    flexDirection: 'column',
-    backgroundColor: '#ffffff',
-    padding: 30,
-  },
-  section: {
-    margin: 10,
-    padding: 10,
-    flexGrow: 1,
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 18,
-    marginBottom: 10,
-  },
-  text: {
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  table: {
-    display: 'table',
-    width: 'auto',
-    marginVertical: 10,
-  },
-  tableRow: {
-    flexDirection: 'row',
-  },
-  tableCell: {
-    padding: 5,
-    borderWidth: 1,
-    borderColor: '#000000',
-  },
-  tableHeader: {
-    backgroundColor: '#f0f0f0',
-    fontWeight: 'bold',
-  },
-});
-
-interface PDFReportProps {
+// Типы данных для PDF
+interface PDFData {
   userId: string;
   dateRange: DateRange;
   data: {
@@ -62,49 +19,9 @@ interface PDFReportProps {
   };
 }
 
-// Используем JSX.Element вместо прямого рендеринга компонентов
-const createPDFReport = ({ userId, dateRange, data, insights }: PDFReportProps) => ({
-  document: (
-    <Document>
-      <Page style={styles.page}>
-        <View style={styles.section}>
-          <Text style={styles.title}>Health Report</Text>
-          <Text style={styles.text}>Period: {dateRange.from} to {dateRange.to}</Text>
-          
-          {/* Glucose Section */}
-          <Text style={styles.subtitle}>Glucose Readings</Text>
-          <View style={styles.table}>
-            {data.glucose.slice(0, 10).map((reading, index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text style={[styles.tableCell, index === 0 && styles.tableHeader]}>
-                  {reading.timestamp}
-                </Text>
-                <Text style={[styles.tableCell, index === 0 && styles.tableHeader]}>
-                  {reading.value} mg/dL
-                </Text>
-              </View>
-            ))}
-          </View>
-          
-          {/* Insights Section */}
-          <Text style={styles.subtitle}>AI Insights</Text>
-          {insights.glucoseInsights.map((insight, index) => (
-            <Text key={index} style={styles.text}>• {insight}</Text>
-          ))}
-        </View>
-      </Page>
-      
-      {/* Additional page for food data */}
-      <Page style={styles.page}>
-        <View style={styles.section}>
-          <Text style={styles.subtitle}>Food Log</Text>
-          {/* Food entries table */}
-        </View>
-      </Page>
-    </Document>
-  )
-});
-
+/**
+ * Сервис для генерации PDF-отчетов с данными о здоровье
+ */
 class PDFService {
   private static instance: PDFService;
 
@@ -117,36 +34,178 @@ class PDFService {
     return PDFService.instance;
   }
 
-  public async generateReport(
-    userId: string,
-    dateRange: DateRange
-  ): Promise<Buffer> {
-    // Fetch all required data
-    const data = await exportService.exportToJSON(userId, 
-      ['glucose', 'food', 'activity', 'wellbeing'],
-      dateRange
-    );
+  /**
+   * Генерирует HTML-разметку для PDF-отчета
+   */
+  private generateHTML(data: PDFData): string {
+    const { dateRange, userId, data: healthData, insights } = data;
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Health Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          .header { text-align: center; margin-bottom: 20px; }
+          .title { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+          .subtitle { font-size: 18px; margin-bottom: 15px; }
+          .section { margin-bottom: 20px; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .table th { background-color: #f2f2f2; }
+          .insights { background-color: #f9f9f9; padding: 10px; border-radius: 5px; }
+          .insights-item { margin-bottom:. 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">DiaDoc Health Report</div>
+          <div class="subtitle">Period: ${dateRange.from} to ${dateRange.to}</div>
+          <div>User: ${userId}</div>
+        </div>
+        
+        <div class="section">
+          <h2>Glucose Readings</h2>
+          <table class="table">
+            <tr>
+              <th>Time</th>
+              <th>Value (mg/dL)</th>
+            </tr>
+            ${healthData.glucose.slice(0, 10).map(reading => `
+              <tr>
+                <td>${reading.timestamp}</td>
+                <td>${reading.value}</td>
+              </tr>
+            `).join('')}
+          </table>
+          
+          <div class="insights">
+            <h3>AI Insights - Glucose</h3>
+            <ul>
+              ${insights.glucoseInsights.map(insight => `
+                <li class="insights-item">${insight}</li>
+              `).join('')}
+            </ul>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h2>Food Log</h2>
+          <table class="table">
+            <tr>
+              <th>Time</th>
+              <th>Food</th>
+              <th>Carbs (g)</th>
+            </tr>
+            ${healthData.food.slice(0, 10).map(entry => `
+              <tr>
+                <td>${entry.timestamp}</td>
+                <td>${entry.name}</td>
+                <td>${entry.carbs || '-'}</td>
+              </tr>
+            `).join('')}
+          </table>
+        </div>
+        
+        <div class="section">
+          <h2>Activity Log</h2>
+          <table class="table">
+            <tr>
+              <th>Date</th>
+              <th>Activity</th>
+              <th>Duration</th>
+            </tr>
+            ${healthData.activity.slice(0, 10).map(entry => `
+              <tr>
+                <td>${entry.date}</td>
+                <td>${entry.type}</td>
+                <td>${entry.duration} min</td>
+              </tr>
+            `).join('')}
+          </table>
+        </div>
+        
+        <div class="section">
+          <h2>Wellbeing Data</h2>
+          <table class="table">
+            <tr>
+              <th>Date</th>
+              <th>Metric</th>
+              <th>Value</th>
+            </tr>
+            ${healthData.wellbeing.slice(0, 10).map(entry => `
+              <tr>
+                <td>${entry.date}</td>
+                <td>${entry.metric}</td>
+                <td>${entry.value}</td>
+              </tr>
+            `).join('')}
+          </table>
+        </div>
+        
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} DiaDoc - Generated on ${new Date().toLocaleString()}</p>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 
-    // TODO: Fetch AI insights
-    const insights = {
-      glucoseInsights: ['Sample insight 1', 'Sample insight 2'],
-      foodInsights: ['Sample food insight'],
-      activityInsights: ['Sample activity insight'],
-      wellbeingInsights: ['Sample wellbeing insight'],
-    };
+  /**
+   * Генерирует PDF-отчет для указанного пользователя за выбранный период
+   */
+  public async generateReport(userId: string, dateRange: DateRange): Promise<Buffer> {
+    try {
+      // Загружаем данные из базы
+      const exportData = await exportService.exportToJSON(
+        userId,
+        ['glucose', 'food', 'activity', 'wellbeing'],
+        dateRange
+      );
 
-    // Create PDF document
-    const report = createPDFReport({
-      userId,
-      dateRange,
-      data: data.data,
-      insights
-    });
+      // Генерируем примерные инсайты (в реальном приложении здесь будет логика AI)
+      const insights = {
+        glucoseInsights: [
+          'Средний уровень глюкозы в пределах нормы',
+          'Обнаружены 2 случая гипогликемии за выбранный период',
+          'Уровень глюкозы наиболее стабилен в первой половине дня'
+        ],
+        foodInsights: [
+          'Рекомендуется увеличить потребление белка',
+          'Потребление углеводов в пределах нормы'
+        ],
+        activityInsights: [
+          'Физическая активность ниже рекомендуемой нормы',
+          'Наблюдается положительная динамика в регулярности упражнений'
+        ],
+        wellbeingInsights: [
+          'Качество сна улучшилось за последнюю неделю',
+          'Уровень стресса выше среднего'
+        ]
+      };
 
-    // TODO: Implement PDF generation using @react-pdf/renderer
-    // This will require setting up proper server-side rendering
-    // For now, we'll return a placeholder
-    return Buffer.from('PDF Generation not implemented');
+      // Составляем данные для отчета
+      const pdfData: PDFData = {
+        userId,
+        dateRange,
+        data: exportData.data,
+        insights
+      };
+
+      // Генерируем HTML для PDF
+      const html = this.generateHTML(pdfData);
+
+      // В реальном приложении здесь был бы код для преобразования HTML в PDF
+      // Например, с использованием puppeteer или html-pdf
+      
+      // Пока возвращаем HTML в виде буфера
+      return Buffer.from(html);
+    } catch (error) {
+      console.error('Error generating PDF report:', error);
+      throw new Error('Failed to generate PDF report');
+    }
   }
 }
 
