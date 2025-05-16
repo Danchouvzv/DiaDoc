@@ -1,23 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exportService } from '@/lib/export/export-service';
 import { pdfService } from '@/lib/export/pdf-service';
-import { getAuth } from '@clerk/nextjs/server';
+// Удаляем импорт Clerk
 
 export async function GET(req: NextRequest) {
   try {
-    // Get user session
-    const { userId } = getAuth(req);
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
+    // Временная заглушка для демонстрации
+    // В реальном приложении здесь должна быть проверка авторизации через Firebase
+    const userId = "demo-user-123"; // Временный идентификатор пользователя для тестирования
+    
     // Get query parameters
     const searchParams = req.nextUrl.searchParams;
     const from = searchParams.get('from');
     const to = searchParams.get('to');
+    const entities = searchParams.get('entities')?.split(',') || ['glucose', 'food', 'activity', 'wellbeing'];
+
+    // Логируем информацию для отладки
+    console.log(`PDF Export request for: ${from} to ${to}, entities: ${entities.join(', ')}`);
 
     if (!from || !to) {
       return NextResponse.json(

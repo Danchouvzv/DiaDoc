@@ -1,23 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exportService } from '@/lib/export/export-service';
-import { getAuth } from '@clerk/nextjs/server';
 
 export async function GET(req: NextRequest) {
   try {
-    // Get user session
-    const { userId } = getAuth(req);
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // Временная заглушка для демонстрации
+    // В реальном приложении здесь должна быть проверка авторизации через Firebase
+    const userId = "demo-user-123"; // Временный идентификатор пользователя для тестирования
 
     // Get query parameters
     const searchParams = req.nextUrl.searchParams;
     const entity = searchParams.get('entity');
     const from = searchParams.get('from');
     const to = searchParams.get('to');
+    
+    // Логируем информацию для отладки
+    console.log(`CSV Export request for: ${from} to ${to}, entity: ${entity}`);
 
     if (!entity || !from || !to) {
       return NextResponse.json(

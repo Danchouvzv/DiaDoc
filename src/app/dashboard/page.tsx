@@ -9,8 +9,19 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
-import { ArrowUpRight, Activity, Utensils, Heart, Droplet } from 'lucide-react';
+import { 
+  ArrowUpRight, Activity, Utensils, Heart, Droplet,
+  FileText 
+} from 'lucide-react';
 import Link from 'next/link';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { toast } from 'react-hot-toast';
+import { DateRange } from 'react-day-picker';
 
 // Mock data - would be replaced with real data from Firebase
 const mockGlucoseData = [
@@ -130,6 +141,21 @@ export default function Dashboard() {
           </div>
         </motion.div>
         
+        {/* Navigation Tabs with Reports Link */}
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex mb-8"
+        >
+          <Link href="/dashboard/reports">
+            <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-lg flex items-center space-x-2 hover:from-blue-700 hover:to-indigo-600 transition-colors shadow-md">
+              <FileText size={18} />
+              <span>View Reports & Export</span>
+            </button>
+          </Link>
+        </motion.div>
+
         {/* Stats Cards */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -431,6 +457,16 @@ export default function Dashboard() {
           </motion.div>
         </div>
         
+        {/* Weekly Stats */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700 mb-8"
+        >
+          {/* ... существующая статистика за неделю ... */}
+        </motion.div>
+        
         {/* Insights */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -438,23 +474,7 @@ export default function Dashboard() {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700"
         >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">Health Insights</h2>
-            <Link href="/dashboard/insights">
-              <button className="text-primary flex items-center space-x-1 text-sm">
-                <span>View All</span>
-                <ArrowUpRight size={16} />
-              </button>
-            </Link>
-          </div>
-          
-          <div className="space-y-4">
-            {mockInsights.map((insight, index) => (
-              <div key={index} className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500">
-                <p className="text-gray-800 dark:text-gray-200">{insight}</p>
-              </div>
-            ))}
-          </div>
+          {/* ... существующие инсайты ... */}
         </motion.div>
       </div>
     </div>

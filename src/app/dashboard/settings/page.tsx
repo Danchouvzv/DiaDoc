@@ -67,6 +67,17 @@ export default function SettingsPage() {
   const [glucoseUnit, setGlucoseUnit] = useState("mg/dL");
   const [weightUnit, setWeightUnit] = useState("kg");
   
+  // Дополнительные состояния для новых разделов
+  const [selectedColorTheme, setSelectedColorTheme] = useState("blue");
+  const [fontSize, setFontSize] = useState("Medium");
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [carbUnit, setCarbUnit] = useState("grams");
+  const [timeFormat, setTimeFormat] = useState("12h");
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [shareWithHealthcare, setShareWithHealthcare] = useState(true);
+  const [shareForResearch, setShareForResearch] = useState(true);
+  const [allowMarketing, setAllowMarketing] = useState(false);
+  
   useEffect(() => {
     setMounted(true);
     setIsMobile(window.innerWidth < 768);
@@ -96,6 +107,26 @@ export default function SettingsPage() {
   const handleThemeChange = () => {
     setTheme(theme === "dark" ? "light" : "dark");
     setDarkMode(!darkMode);
+  };
+  
+  const handleColorThemeChange = (color) => {
+    setSelectedColorTheme(color);
+    // В реальном приложении здесь бы менялась цветовая схема
+  };
+  
+  const handleFontSizeChange = (size) => {
+    setFontSize(size);
+    // В реальном приложении здесь бы менялся размер шрифта
+  };
+  
+  const toggleReduceMotion = () => {
+    setReduceMotion(!reduceMotion);
+    // В реальном приложении здесь бы менялись настройки анимаций
+  };
+  
+  const toggleTwoFactor = () => {
+    setTwoFactorEnabled(!twoFactorEnabled);
+    // В реальном приложении здесь бы включалась/выключалась двухфакторная аутентификация
   };
   
   const handleSaveSettings = async () => {
@@ -468,6 +499,552 @@ export default function SettingsPage() {
                           <Save className="w-5 h-5 mr-2" />
                         )}
                         {saving ? "Saving..." : "Save Preferences"}
+                      </motion.button>
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
+              )}
+              
+              {activeTab === "appearance" && (
+                <motion.div
+                  key="appearance"
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit={{ opacity: 0, y: 20 }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                >
+                  <h2 className="text-xl font-bold mb-4 dark:text-white">Appearance Settings</h2>
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+                    <motion.div variants={itemVariants} className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium dark:text-white">Dark Mode</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Switch between light and dark mode</p>
+                      </div>
+                      <div className="relative">
+                        <input 
+                          type="checkbox" 
+                          id="darkMode" 
+                          checked={darkMode}
+                          onChange={handleThemeChange}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
+                            darkMode ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                          }`}
+                        >
+                          <motion.div 
+                            layout
+                            className="bg-white w-5 h-5 rounded-full shadow-md flex items-center justify-center"
+                            animate={{
+                              x: darkMode ? 28 : 0
+                            }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          >
+                            {darkMode ? <Moon className="w-3 h-3 text-primary" /> : <Sun className="w-3 h-3 text-amber-500" />}
+                          </motion.div>
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.hr variants={itemVariants} className="border-gray-200 dark:border-gray-700" />
+                    
+                    <motion.div variants={itemVariants} className="grid gap-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Color Theme</label>
+                      <div className="grid grid-cols-5 gap-3">
+                        {['blue', 'green', 'purple', 'red', 'orange'].map((color) => (
+                          <motion.button
+                            key={color}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleColorThemeChange(color)}
+                            className={`w-full h-10 rounded-lg ${
+                              color === 'blue' ? 'bg-blue-500' :
+                              color === 'green' ? 'bg-green-500' :
+                              color === 'purple' ? 'bg-purple-500' :
+                              color === 'red' ? 'bg-red-500' : 'bg-orange-500'
+                            } ${color === selectedColorTheme ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-gray-600' : ''}`}
+                            aria-label={`${color} theme`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Primary color theme for buttons and interactive elements
+                      </p>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="grid gap-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Font Size</label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {['Small', 'Medium', 'Large'].map((size) => (
+                          <motion.button
+                            key={size}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleFontSizeChange(size)}
+                            className={`px-4 py-2 rounded-lg border ${
+                              size === fontSize 
+                                ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
+                                : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            {size}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="grid gap-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Animation Settings</label>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-700 dark:text-gray-300">Reduce Motion</span>
+                        <div className="relative">
+                          <input 
+                            type="checkbox" 
+                            id="reduceMotion" 
+                            checked={reduceMotion}
+                            onChange={toggleReduceMotion}
+                            className="sr-only"
+                          />
+                          <div
+                            className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
+                              reduceMotion ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                            }`}
+                          >
+                            <motion.div 
+                              layout
+                              className="bg-white w-5 h-5 rounded-full shadow-md"
+                              animate={{
+                                x: reduceMotion ? 28 : 0
+                              }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="pt-4">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleSaveSettings}
+                        className="w-full bg-primary hover:bg-primary-600 text-white py-2 px-4 rounded-lg flex items-center justify-center font-medium"
+                        disabled={saving}
+                      >
+                        {saving ? (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="mr-2"
+                          >
+                            <svg className="w-5 h-5" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                          </motion.div>
+                        ) : (
+                          <Save className="w-5 h-5 mr-2" />
+                        )}
+                        {saving ? "Saving..." : "Save Preferences"}
+                      </motion.button>
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
+              )}
+              
+              {activeTab === "units" && (
+                <motion.div
+                  key="units"
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit={{ opacity: 0, y: 20 }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                >
+                  <h2 className="text-xl font-bold mb-4 dark:text-white">Units & Measurement Settings</h2>
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+                    <motion.div variants={itemVariants} className="grid gap-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Glucose Units</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setGlucoseUnit("mg/dL")}
+                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
+                            glucoseUnit === "mg/dL" 
+                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <span className="font-medium">mg/dL</span>
+                          <span className="text-xs ml-1 text-gray-500 dark:text-gray-400">(US, Default)</span>
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setGlucoseUnit("mmol/L")}
+                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
+                            glucoseUnit === "mmol/L" 
+                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <span className="font-medium">mmol/L</span>
+                          <span className="text-xs ml-1 text-gray-500 dark:text-gray-400">(International)</span>
+                        </motion.button>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Units used for blood glucose readings throughout the app
+                      </p>
+                    </motion.div>
+                    
+                    <motion.hr variants={itemVariants} className="border-gray-200 dark:border-gray-700" />
+                    
+                    <motion.div variants={itemVariants} className="grid gap-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Weight Units</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setWeightUnit("kg")}
+                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
+                            weightUnit === "kg" 
+                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <span className="font-medium">Kilograms (kg)</span>
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setWeightUnit("lb")}
+                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
+                            weightUnit === "lb" 
+                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <span className="font-medium">Pounds (lb)</span>
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="grid gap-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Carbohydrate Units</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setCarbUnit("grams")}
+                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
+                            carbUnit === "grams" 
+                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <span className="font-medium">Grams (g)</span>
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setCarbUnit("exchanges")}
+                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
+                            carbUnit === "exchanges" 
+                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <span className="font-medium">Exchanges</span>
+                        </motion.button>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        How carbohydrates are measured in food entries
+                      </p>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="grid gap-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Time Format</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setTimeFormat("12h")}
+                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
+                            timeFormat === "12h" 
+                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <span className="font-medium">12-hour</span>
+                          <span className="text-xs ml-1 text-gray-500 dark:text-gray-400">(AM/PM)</span>
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setTimeFormat("24h")}
+                          className={`px-4 py-3 rounded-lg border flex items-center justify-center ${
+                            timeFormat === "24h" 
+                              ? 'bg-primary/10 border-primary text-primary dark:bg-primary/20' 
+                              : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <span className="font-medium">24-hour</span>
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="pt-4">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleSaveSettings}
+                        className="w-full bg-primary hover:bg-primary-600 text-white py-2 px-4 rounded-lg flex items-center justify-center font-medium"
+                        disabled={saving}
+                      >
+                        {saving ? (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="mr-2"
+                          >
+                            <svg className="w-5 h-5" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                          </motion.div>
+                        ) : (
+                          <Save className="w-5 h-5 mr-2" />
+                        )}
+                        {saving ? "Saving..." : "Save Units Preferences"}
+                      </motion.button>
+                    </motion.div>
+                  </motion.div>
+                </motion.div>
+              )}
+              
+              {activeTab === "privacy" && (
+                <motion.div
+                  key="privacy"
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit={{ opacity: 0, y: 20 }}
+                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+                >
+                  <h2 className="text-xl font-bold mb-4 dark:text-white">Privacy & Security Settings</h2>
+                  <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+                    <motion.div variants={itemVariants} className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium dark:text-white">Two-Factor Authentication</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Add an extra layer of security to your account</p>
+                      </div>
+                      <div className="relative">
+                        <input 
+                          type="checkbox" 
+                          id="twoFactor" 
+                          checked={twoFactorEnabled}
+                          onChange={toggleTwoFactor}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-14 h-7 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
+                            twoFactorEnabled ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                          }`}
+                        >
+                          <motion.div 
+                            layout
+                            className="bg-white w-5 h-5 rounded-full shadow-md"
+                            animate={{
+                              x: twoFactorEnabled ? 28 : 0
+                            }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.hr variants={itemVariants} className="border-gray-200 dark:border-gray-700" />
+                    
+                    <motion.div variants={itemVariants} className="grid gap-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Data Sharing</label>
+                      
+                      <div className="flex items-center justify-between py-2">
+                        <div>
+                          <h3 className="font-medium text-sm dark:text-white">Share with Healthcare Providers</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Allow doctors to view your health data</p>
+                        </div>
+                        <div className="relative">
+                          <input 
+                            type="checkbox" 
+                            id="shareHealthcare" 
+                            checked={shareWithHealthcare}
+                            onChange={() => setShareWithHealthcare(!shareWithHealthcare)}
+                            className="sr-only"
+                          />
+                          <div
+                            className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
+                              shareWithHealthcare ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                            }`}
+                          >
+                            <motion.div 
+                              layout
+                              className="bg-white w-4 h-4 rounded-full shadow-md"
+                              animate={{
+                                x: shareWithHealthcare ? 21 : 0
+                              }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between py-2">
+                        <div>
+                          <h3 className="font-medium text-sm dark:text-white">Anonymous Data for Research</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Contribute anonymized data for diabetes research</p>
+                        </div>
+                        <div className="relative">
+                          <input 
+                            type="checkbox" 
+                            id="shareResearch" 
+                            checked={shareForResearch}
+                            onChange={() => setShareForResearch(!shareForResearch)}
+                            className="sr-only"
+                          />
+                          <div
+                            className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
+                              shareForResearch ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                            }`}
+                          >
+                            <motion.div 
+                              layout
+                              className="bg-white w-4 h-4 rounded-full shadow-md"
+                              animate={{
+                                x: shareForResearch ? 21 : 0
+                              }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between py-2">
+                        <div>
+                          <h3 className="font-medium text-sm dark:text-white">Marketing Communications</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Allow personalized recommendations</p>
+                        </div>
+                        <div className="relative">
+                          <input 
+                            type="checkbox" 
+                            id="shareMarketing" 
+                            checked={allowMarketing}
+                            onChange={() => setAllowMarketing(!allowMarketing)}
+                            className="sr-only"
+                          />
+                          <div
+                            className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ease-in-out ${
+                              allowMarketing ? "bg-primary" : "bg-gray-300 dark:bg-gray-700"
+                            }`}
+                          >
+                            <motion.div 
+                              layout
+                              className="bg-white w-4 h-4 rounded-full shadow-md"
+                              animate={{
+                                x: allowMarketing ? 21 : 0
+                              }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.hr variants={itemVariants} className="border-gray-200 dark:border-gray-700" />
+                    
+                    <motion.div variants={itemVariants} className="grid gap-3">
+                      <h3 className="font-medium dark:text-white">Sessions & Devices</h3>
+                      
+                      <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="bg-primary/10 p-2 rounded-full mr-3">
+                            <Smartphone className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm dark:text-white">iPhone 13 Pro</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Last active: 2 minutes ago</div>
+                          </div>
+                        </div>
+                        <div className="text-xs font-medium text-green-500 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                          Current
+                        </div>
+                      </div>
+                      
+                      <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="bg-primary/10 p-2 rounded-full mr-3">
+                            <Globe className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm dark:text-white">Chrome on MacBook</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">Last active: 2 days ago</div>
+                          </div>
+                        </div>
+                        <button className="text-xs font-medium text-red-500 hover:text-red-600">
+                          Sign Out
+                        </button>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="pt-4">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleSaveSettings}
+                        className="w-full bg-primary hover:bg-primary-600 text-white py-2 px-4 rounded-lg flex items-center justify-center font-medium"
+                        disabled={saving}
+                      >
+                        {saving ? (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="mr-2"
+                          >
+                            <svg className="w-5 h-5" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                          </motion.div>
+                        ) : (
+                          <Save className="w-5 h-5 mr-2" />
+                        )}
+                        {saving ? "Saving..." : "Save Privacy Settings"}
+                      </motion.button>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="pt-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-full border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 py-2 px-4 rounded-lg flex items-center justify-center font-medium"
+                      >
+                        Export My Data
+                      </motion.button>
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} className="pt-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-full border border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 py-2 px-4 rounded-lg flex items-center justify-center font-medium"
+                      >
+                        Delete My Account
                       </motion.button>
                     </motion.div>
                   </motion.div>
