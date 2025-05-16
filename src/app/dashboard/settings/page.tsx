@@ -171,7 +171,7 @@ export default function SettingsPage() {
   };
   
   // Обработка изменения настроек приватности
-  const handlePrivacyChange = (key: keyof Pick<UserSettings, 'shareWithHealthcare' | 'shareForResearch' | 'allowMarketing'>, value: boolean) => {
+  const handlePrivacyChange = (key: keyof Pick<UserSettings, 'shareWithHealthcare' | 'shareForResearch' | 'allowMarketing' | 'twoFactorEnabled'>, value: boolean) => {
     setSettings({ ...settings, [key]: value });
     setHasChanges(true);
   };
