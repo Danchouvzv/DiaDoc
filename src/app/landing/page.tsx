@@ -85,7 +85,7 @@ const featureSlides = [
     color: "from-green-500/20 to-emerald-400/20"
   },
   {
-    imageSrc: "https://images.unsplash.com/photo-1579684288375-d31f9722a58d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+    imageSrc: "https://sdmntprpolandcentral.oaiusercontent.com/files/00000000-050c-620a-b0f7-7d5e9bf4c14d/raw?se=2025-05-16T21%3A14%3A10Z&sp=r&sv=2024-08-04&sr=b&scid=00000000-0000-0000-0000-000000000000&skoid=76024c37-11e2-4c92-aa07-7e519fbe2d0f&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-16T05%3A19%3A47Z&ske=2025-05-17T05%3A19%3A47Z&sks=b&skv=2024-08-04&sig=AxO9yVBf2u26Zs6sk0OrnR9UfNrOOOLz2mKZ4x2da6o%3D",
     imageHint: "health metrics on digital dashboard",
     title: "Comprehensive Health Metrics",
     description: "Monitor glucose levels, sleep quality, stress, and other vital health indicators in one intuitive dashboard with real-time alerts and predictive insights.",
